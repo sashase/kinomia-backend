@@ -6,3 +6,23 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Showtime {
+  id         Int      @id @default(autoincrement())
+  movie      String
+  date       DateTime
+  format     String?
+  price      Int?
+  order_link String?
+  imdb_link  String?
+  cinema     Cinema   @relation(fields: [cinemaId], references: [id])
+  cinemaId   Int
+}
+
+model Cinema {
+  id        Int        @id @default(autoincrement())
+  name      String
+  city      String?
+  address   String?
+  showtimes Showtime[]
+}
