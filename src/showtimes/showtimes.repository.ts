@@ -18,10 +18,10 @@ export class ShowtimesRepository {
   }
 
   async getShowtime(params: {
-    select?: Prisma.ShowtimeSelect, include?: Prisma.ShowtimeInclude, where: Prisma.ShowtimeWhereUniqueInput
+    select?: Prisma.ShowtimeSelect, where: Prisma.ShowtimeWhereInput
   }): Promise<Showtime> {
-    const { select, include, where } = params
-    return this.prisma.showtime.findUnique({ select, include, where } as Prisma.ShowtimeFindUniqueArgs)
+    const { select, where } = params
+    return this.prisma.showtime.findFirst({ select, where })
   }
 
   async createShowtime(params: { data: Prisma.ShowtimeCreateInput }): Promise<Showtime> {
