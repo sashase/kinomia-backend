@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common'
-import { Cinema } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
+import { CinemasService } from '../../../cinemas/cinemas.service'
+import { CreateCinemaDto } from '../../../cinemas/dtos'
 import { ScraperService } from '../../scraper.service'
-import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 
 @Injectable()
 export class MultiplexCinemasService {
-  constructor(private readonly scraperService: ScraperService, private readonly cinemasRepository: CinemasRepository) { }
+  constructor(private readonly scraperService: ScraperService, private readonly cinemasService: CinemasService) { }
 
-  async processCity(city: HTMLElement): Promise<void> {
+  async processCity(city: HTMLElement, networkId: number): Promise<void> {
     const cityName = city.attributes['data-cityname']
 
     const cinemas = city.querySelectorAll('.cinema')
@@ -18,29 +18,24 @@ export class MultiplexCinemasService {
       const name = cinema.attributes['data-name']
       const address = cinema.querySelector('p.address').text
 
-      const cinemaAlreadyExists = await this.cinemasRepository.getCinema({ where: { id } })
-      if (cinemaAlreadyExists) return
-
-      const processedCinema: Cinema = {
-        id,
+      const processedCinema: CreateCinemaDto = {
+        internal_cinema_id: id,
         name,
-        network: 'multiplex',
         city: cityName,
         address
       }
 
-      await this.cinemasRepository.createCinema({ data: processedCinema })
+      await this.cinemasService.validateAndCreateCinema(processedCinema, networkId)
     }))
   }
 
-
-  async updateCinemas(url: string): Promise<void> {
+  async updateCinemas(url: string, networkId: number): Promise<void> {
     const root = await this.scraperService.getRoot(url)
 
     const citiesList = root.querySelectorAll('.rm_clist')
 
     await Promise.all(citiesList.map(async (city) => {
-      await this.processCity(city)
+      await this.processCity(city, networkId)
     }))
   }
 }

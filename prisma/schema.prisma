@@ -16,17 +16,31 @@ model Showtime {
   price                Int?
   order_link           String?
   imdb_link            String?
-  cinema               Cinema   @relation(fields: [cinema_id], references: [id])
-  cinema_id            Int
+
+  cinema    Cinema @relation(fields: [cinema_id], references: [id])
+  cinema_id Int
 
   @@unique([internal_showtime_id, cinema_id])
 }
 
 model Cinema {
-  id        Int        @id @default(autoincrement())
-  name      String
-  network   String
-  city      String?
-  address   String?
+  id                 Int     @id @default(autoincrement())
+  internal_cinema_id Int
+  name               String
+  city               String?
+  address            String?
+
+  network    Network @relation(fields: [network_id], references: [id])
+  network_id Int
+
   showtimes Showtime[]
+
+  @@unique([internal_cinema_id, network_id])
+}
+
+model Network {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  cinemas Cinema[]
 }

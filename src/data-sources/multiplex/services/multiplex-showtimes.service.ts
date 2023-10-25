@@ -1,23 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { HTMLElement } from 'node-html-parser'
-import { combineDateWithTime, getOrderLink } from '../utils'
+import { ShowtimesService } from '../../../showtimes/showtimes.service'
+import { CreateShowtimeDto } from '../../../showtimes/dtos'
 import { ScraperService } from '../../scraper.service'
-import { CinemasRepository } from '../../../cinemas/cinemas.repository'
-import { ShowtimesRepository } from '../../../showtimes/showtimes.repository'
-
-interface ShowtimeDto {
-  internal_showtime_id: number
-  movie: string
-  date: Date
-  format?: string
-  price?: number
-  order_link?: string
-  imdb_link?: string
-}
+import { combineDateWithTime, getOrderLink } from '../utils'
 
 @Injectable()
 export class MultiplexShowtimesService {
-  constructor(private readonly scraperService: ScraperService, private readonly cinemasRepository: CinemasRepository, private readonly showtimesRepository: ShowtimesRepository) { }
+  constructor(private readonly scraperService: ScraperService, private readonly showtimesService: ShowtimesService) { }
 
   async processMovie(movie: HTMLElement, cinemaId: number): Promise<void> {
     const schedule = movie.querySelectorAll('.mpp_schedule')
@@ -52,7 +42,7 @@ export class MultiplexShowtimesService {
 
         const combinedDateWithTime = combineDateWithTime(dayTimestamp, time)
 
-        const processedShowtime: ShowtimeDto = {
+        const processedShowtime: CreateShowtimeDto = {
           internal_showtime_id: internalShowtimeId,
           movie: movieName,
           date: combinedDateWithTime,
@@ -61,32 +51,13 @@ export class MultiplexShowtimesService {
           price,
         }
 
-        await this.addShowtimeToDb(processedShowtime, cinemaId)
+        await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
       }))
     }))
   }
 
-  async addShowtimeToDb(showtime: ShowtimeDto, cinemaId: number): Promise<void> {
-    const { internal_showtime_id } = showtime
-
-    const cinemaExists = await this.cinemasRepository.getCinema({ where: { id: cinemaId } })
-    if (!cinemaExists) return
-
-    const showtimeExists = await this.showtimesRepository.getShowtime({ where: { internal_showtime_id, cinema_id: cinemaId } })
-    if (showtimeExists) return
-
-    this.showtimesRepository.createShowtime({
-      data: {
-        cinema: {
-          connect: { id: cinemaId }
-        },
-        ...showtime
-      }
-    })
-  }
-
-  async updateShowtimes(url: string, cinemaId: number): Promise<void> {
-    const root = await this.scraperService.getRoot(url, cinemaId)
+  async updateShowtimes(url: string, cinemaId: number, cinemaInternalId: number): Promise<void> {
+    const root = await this.scraperService.getRoot(url, cinemaInternalId)
 
     const movies: HTMLElement[] = root.querySelectorAll('div.mp_poster')
 
