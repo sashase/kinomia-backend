@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { Cinema } from '@prisma/client'
-import { CinemasRepository } from '../../../cinemas/cinemas.repository'
-import { ScraperService } from '../../scraper.service'
 import { HTMLElement } from 'node-html-parser'
+import { ScraperService } from '../../scraper.service'
+import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 
 @Injectable()
 export class MultiplexCinemasService {
@@ -13,7 +13,7 @@ export class MultiplexCinemasService {
 
     const cinemas = city.querySelectorAll('.cinema')
 
-    cinemas.forEach(async (cinema) => {
+    await Promise.all(cinemas.map(async (cinema) => {
       const id = parseInt(cinema.attributes['data-id'])
       const name = cinema.attributes['data-name']
       const address = cinema.querySelector('p.address').text
@@ -24,12 +24,13 @@ export class MultiplexCinemasService {
       const processedCinema: Cinema = {
         id,
         name,
+        network: 'multiplex',
         city: cityName,
         address
       }
 
       await this.cinemasRepository.createCinema({ data: processedCinema })
-    })
+    }))
   }
 
 
@@ -38,8 +39,8 @@ export class MultiplexCinemasService {
 
     const citiesList = root.querySelectorAll('.rm_clist')
 
-    citiesList.map(async (city) => {
+    await Promise.all(citiesList.map(async (city) => {
       await this.processCity(city)
-    })
+    }))
   }
 }

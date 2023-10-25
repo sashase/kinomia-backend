@@ -1,9 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Cinema } from '@prisma/client'
+import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 import { MultiplexCinemasService } from '../services/multiplex-cinemas.service'
 import { MultiplexShowtimesService } from '../services/multiplex-showtimes.service'
-import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 
 @Injectable()
 export class MultiplexService {
@@ -15,10 +15,11 @@ export class MultiplexService {
 
       await this.multiplexCinemasService.updateCinemas(url)
 
-      const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({})
-      cinemas.map(async (cinema) => {
+      const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network: 'multiplex' } })
+
+      await Promise.all(cinemas.map(async (cinema) => {
         await this.multiplexShowtimesService.updateShowtimes(url, cinema.id)
-      })
+      }))
 
       return {
         message: 'Multiplex Data Successfully Updated',

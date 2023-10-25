@@ -1,11 +1,12 @@
-import { ShowtimesRepository } from '../../../showtimes/showtimes.repository'
 import { Injectable } from '@nestjs/common'
+import { HTMLElement } from 'node-html-parser'
+import { combineDateWithTime, getOrderLink } from '../utils'
 import { ScraperService } from '../../scraper.service'
 import { CinemasRepository } from '../../../cinemas/cinemas.repository'
-import { combineDateWithTime, getOrderLink } from '../utils'
-import { HTMLElement } from 'node-html-parser'
+import { ShowtimesRepository } from '../../../showtimes/showtimes.repository'
 
 interface ShowtimeDto {
+  internal_showtime_id: number
   movie: string
   date: Date
   format?: string
@@ -21,7 +22,7 @@ export class MultiplexShowtimesService {
   async processMovie(movie: HTMLElement, cinemaId: number): Promise<void> {
     const schedule = movie.querySelectorAll('.mpp_schedule')
 
-    schedule.forEach((day) => {
+    await Promise.all(schedule.map(async (day) => {
       const dayTimestamp = day.attributes['data-selector']
 
       /*
@@ -29,21 +30,18 @@ export class MultiplexShowtimesService {
              we do not want to have showtimes that are sold out or showtimes with the 'buy_closest' class, 
              those are duplicates and made only for UI/UX
       */
-      const showtimes = day.querySelectorAll('div.ns').filter((showtime) => {
+      const showtimes = Array.from(day.querySelectorAll('div.ns')).filter((showtime) => {
         const classes = showtime.getAttribute('class').split(' ')
-        for (let i = 0; i < classes.length; i++) {
-          if (classes[i] === 'buy_closest' || classes[i] === 'locked')
-            return false
-          else return true
-        }
+        return !classes.includes('buy_closest') && !classes.includes('locked')
       })
 
-      showtimes.forEach(async (showtime) => {
+      await Promise.all(showtimes.map(async (showtime) => {
         const id = showtime.attributes['data-id']
         if (!id) return
 
         const orderLink = getOrderLink(id)
 
+        const internalShowtimeId = parseInt(id.split('-')[1])
         const movieName = showtime.attributes['data-name']
         const time = showtime.querySelector('p.time').text
         const format = showtime.querySelector('p.tag').text
@@ -55,6 +53,7 @@ export class MultiplexShowtimesService {
         const combinedDateWithTime = combineDateWithTime(dayTimestamp, time)
 
         const processedShowtime: ShowtimeDto = {
+          internal_showtime_id: internalShowtimeId,
           movie: movieName,
           date: combinedDateWithTime,
           format: format,
@@ -63,13 +62,18 @@ export class MultiplexShowtimesService {
         }
 
         await this.addShowtimeToDb(processedShowtime, cinemaId)
-      })
-    })
+      }))
+    }))
   }
 
   async addShowtimeToDb(showtime: ShowtimeDto, cinemaId: number): Promise<void> {
+    const { internal_showtime_id } = showtime
+
     const cinemaExists = await this.cinemasRepository.getCinema({ where: { id: cinemaId } })
     if (!cinemaExists) return
+
+    const showtimeExists = await this.showtimesRepository.getShowtime({ where: { internal_showtime_id, cinema_id: cinemaId } })
+    if (showtimeExists) return
 
     this.showtimesRepository.createShowtime({
       data: {
@@ -86,8 +90,8 @@ export class MultiplexShowtimesService {
 
     const movies: HTMLElement[] = root.querySelectorAll('div.mp_poster')
 
-    movies.map(async (movie) => {
+    await Promise.all(movies.map(async (movie) => {
       await this.processMovie(movie, cinemaId)
-    })
+    }))
   }
 }
