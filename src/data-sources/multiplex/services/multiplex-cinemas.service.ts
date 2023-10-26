@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { HTMLElement } from 'node-html-parser'
+import { DataSourceCinemasService } from '../../../interfaces/data-sources'
 import { CinemasService } from '../../../cinemas/cinemas.service'
 import { CreateCinemaDto } from '../../../cinemas/dtos'
 import { ScraperService } from '../../scraper.service'
 
 @Injectable()
-export class MultiplexCinemasService {
+export class MultiplexCinemasService implements DataSourceCinemasService {
   constructor(private readonly scraperService: ScraperService, private readonly cinemasService: CinemasService) { }
 
   async processCity(city: HTMLElement, networkId: number): Promise<void> {

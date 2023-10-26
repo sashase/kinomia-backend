@@ -1,13 +1,14 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Cinema } from '@prisma/client'
+import { DataSourceService } from '../../../interfaces/data-sources'
 import { NetworksService } from '../../../networks/networks.service'
 import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 import { MultiplexCinemasService } from '../services/multiplex-cinemas.service'
 import { MultiplexShowtimesService } from '../services/multiplex-showtimes.service'
 
 @Injectable()
-export class MultiplexService {
+export class MultiplexService implements DataSourceService {
   constructor(private readonly configService: ConfigService,
     private readonly networksService: NetworksService,
     private readonly cinemasRepository: CinemasRepository,

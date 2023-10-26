@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { HTMLElement } from 'node-html-parser'
+import { DataSourceShowtimesService } from '../../../interfaces/data-sources'
 import { ShowtimesService } from '../../../showtimes/showtimes.service'
 import { CreateShowtimeDto } from '../../../showtimes/dtos'
 import { ScraperService } from '../../scraper.service'
 import { combineDateWithTime, getOrderLink } from '../utils'
 
 @Injectable()
-export class MultiplexShowtimesService {
+export class MultiplexShowtimesService implements DataSourceShowtimesService {
   constructor(private readonly scraperService: ScraperService, private readonly showtimesService: ShowtimesService) { }
 
   async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
