@@ -10,7 +10,11 @@ import { combineDateWithTime, getOrderLink } from '../utils'
 export class MultiplexShowtimesService implements DataSourceShowtimesService {
   constructor(private readonly scraperService: ScraperService, private readonly showtimesService: ShowtimesService) { }
 
-  async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
+  private readonly networkName: string = 'multiplex'
+  private cinemaId: number
+  private cinemaInternalId: string
+
+  async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string): Promise<void> {
     const id = showtime.attributes['data-id']
     if (!id) return
 
@@ -36,10 +40,10 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
       price,
     }
 
-    await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
+    await this.showtimesService.validateAndCreateShowtime(processedShowtime, this.cinemaId)
   }
 
-  async processMovie(movie: HTMLElement, cinemaId: number): Promise<void> {
+  async processMovie(movie: HTMLElement): Promise<void> {
     const schedule = movie.querySelectorAll('.mpp_schedule')
 
     await Promise.all(schedule.map(async (day) => {
@@ -57,18 +61,21 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
       })
 
       await Promise.all(filteredShowtimes.map(async (showtime) => {
-        await this.formatAndCreateShowtime(showtime, dayTimestamp, cinemaId)
+        await this.formatAndCreateShowtime(showtime, dayTimestamp)
       }))
     }))
   }
 
-  async updateShowtimes(url: string, cinemaId: number, cinemaInternalId: number): Promise<void> {
-    const root = await this.scraperService.getRoot(url, cinemaInternalId)
+  async updateShowtimes(url: string, cinemaId: number, cinemaInternalId: string): Promise<void> {
+    this.cinemaId = cinemaId
+    this.cinemaInternalId = cinemaInternalId
+
+    const root = await this.scraperService.getRoot(url, this.networkName, this.cinemaInternalId)
 
     const movies: HTMLElement[] = root.querySelectorAll('div.mp_poster')
 
     await Promise.all(movies.map(async (movie) => {
-      await this.processMovie(movie, cinemaId)
+      await this.processMovie(movie)
     }))
   }
 }

@@ -6,9 +6,18 @@ import { HTMLElement, parse } from 'node-html-parser'
 export class ScraperService {
   constructor() { }
 
-  async getRoot(url: string, cinemaId?: number): Promise<HTMLElement> {
+  async getRoot(url: string, network?: string, internalCinemaId?: string): Promise<HTMLElement> {
     let cookie: string
-    if (cinemaId) cookie = `cinemaN=${cinemaId.toString().padStart(10, '0')}`
+
+    switch (network) {
+      case 'multiplex':
+        if (internalCinemaId) cookie = `cinemaN=${internalCinemaId.padStart(10, '0')}`
+        break
+
+      default:
+        cookie = ''
+        break
+    }
 
     const config = { headers: { Cookie: cookie ?? '' } }
 

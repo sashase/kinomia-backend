@@ -9,13 +9,15 @@ import { ScraperService } from '../../scraper.service'
 export class MultiplexCinemasService implements DataSourceCinemasService {
   constructor(private readonly scraperService: ScraperService, private readonly cinemasService: CinemasService) { }
 
-  async processCity(city: HTMLElement, networkId: number): Promise<void> {
+  private networkId: number
+
+  async processCity(city: HTMLElement): Promise<void> {
     const cityName = city.attributes['data-cityname']
 
     const cinemas = city.querySelectorAll('.cinema')
 
     await Promise.all(cinemas.map(async (cinema) => {
-      const id = parseInt(cinema.attributes['data-id'])
+      const id = cinema.attributes['data-id']
       const name = cinema.attributes['data-name']
       const address = cinema.querySelector('p.address').text
 
@@ -26,17 +28,19 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
         address
       }
 
-      await this.cinemasService.validateAndCreateCinema(processedCinema, networkId)
+      await this.cinemasService.validateAndCreateCinema(processedCinema, this.networkId)
     }))
   }
 
   async updateCinemas(url: string, networkId: number): Promise<void> {
+    this.networkId = networkId
+
     const root = await this.scraperService.getRoot(url)
 
     const citiesList = root.querySelectorAll('.rm_clist')
 
     await Promise.all(citiesList.map(async (city) => {
-      await this.processCity(city, networkId)
+      await this.processCity(city)
     }))
   }
 }

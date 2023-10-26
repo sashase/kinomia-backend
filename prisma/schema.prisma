@@ -25,7 +25,7 @@ model Showtime {
 
 model Cinema {
   id                 Int     @id @default(autoincrement())
-  internal_cinema_id Int
+  internal_cinema_id String
   name               String
   city               String?
   address            String?
