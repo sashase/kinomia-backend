@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common'
-import axios from 'axios'
+import { HttpException, Injectable } from '@nestjs/common'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import { HTMLElement, parse } from 'node-html-parser'
 
 @Injectable()
@@ -21,7 +21,14 @@ export class ScraperService {
 
     const config = { headers: { Cookie: cookie ?? '' } }
 
-    const { data } = await axios.get(url, config)
+    const { data } = await axios
+      .get(url, config)
+      .then((res: AxiosResponse) => Promise.resolve(res))
+      .catch((error: AxiosError) => {
+        console.log(error)
+        throw new HttpException(error.response.statusText, error.response.status)
+      })
+
     const root = parse(data)
 
     return root
