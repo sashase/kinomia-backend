@@ -5,7 +5,7 @@ import { NetworksRepository } from './networks.repository'
 export class NetworksService {
   constructor(private readonly networksRepository: NetworksRepository) { }
 
-  async getNetworkIdByName(networkName: string) {
+  async getNetworkIdByName(networkName: string): Promise<number> {
     const network = await this.networksRepository.getNetwork({ where: { name: networkName } })
 
     if (!network) {

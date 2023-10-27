@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Cinema } from '@prisma/client'
 import { DataSourceService } from '../../../interfaces/data-sources'
@@ -16,27 +16,23 @@ export class MultiplexService implements DataSourceService {
     private readonly multiplexShowtimesService: MultiplexShowtimesService) { }
 
   async updateData(): Promise<{ message: string, code: number }> {
-    try {
-      const networkName: string = 'multiplex'
-      const networkId: number = await this.networksService.getNetworkIdByName(networkName)
-      const url: string = this.configService.get('dataSources.multiplexUrl', { infer: true })
+    const networkName: string = 'multiplex'
+    const networkId: number = await this.networksService.getNetworkIdByName(networkName)
+    const url: string = this.configService.get('dataSources.multiplexUrl', { infer: true })
 
-      await this.multiplexCinemasService.updateCinemas(url, networkId)
+    await this.multiplexCinemasService.updateCinemas(url, networkId)
 
-      const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
+    const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
 
-      await Promise.all(cinemas.map(async (cinema) => {
-        await this.multiplexShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id)
-      }))
+    if (!cinemas) throw new NotFoundException('Cinemas not found')
 
-      return {
-        message: 'Multiplex Data Successfully Updated',
-        code: 200
-      }
-    }
-    catch (error) {
-      console.log(error)
-      throw new InternalServerErrorException(error)
+    await Promise.all(cinemas.map(async (cinema) => {
+      await this.multiplexShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id)
+    }))
+
+    return {
+      message: 'Multiplex Data Successfully Updated',
+      code: 200
     }
   }
 }
