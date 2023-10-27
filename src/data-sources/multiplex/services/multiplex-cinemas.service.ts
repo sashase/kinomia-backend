@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { HTMLElement } from 'node-html-parser'
 import { DataSourceCinemasService } from '../../../interfaces/data-sources'
 import { CinemasService } from '../../../cinemas/cinemas.service'
@@ -15,6 +15,8 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
     const cityName = city.attributes['data-cityname']
 
     const cinemas = city.querySelectorAll('.cinema')
+
+    if (!cinemas.length) throw new NotFoundException('No cinemas found on the page | Multiplex')
 
     await Promise.all(cinemas.map(async (cinema) => {
       const id = cinema.attributes['data-id']
@@ -38,6 +40,8 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
     const root = await this.scraperService.getRoot(url)
 
     const citiesList = root.querySelectorAll('.rm_clist')
+
+    if (!citiesList.length) throw new NotFoundException('No city found on the page | Multiplex')
 
     await Promise.all(citiesList.map(async (city) => {
       await this.processCity(city)
