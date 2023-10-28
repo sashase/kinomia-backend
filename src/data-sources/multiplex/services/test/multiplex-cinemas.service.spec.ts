@@ -61,8 +61,7 @@ describe('MultiplexCinemasService', () => {
       await service.processCity(cityStub())
 
       expect(cinemasService.validateAndCreateCinema).toBeCalledTimes(numberOfCinemas)
-      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), undefined)
-      // networkId is undefined in a scope of *.spec.ts files, because it's a private property
+      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), service['networkId'])
     })
 
     it('should throw an error if no cinema is found', async () => {
