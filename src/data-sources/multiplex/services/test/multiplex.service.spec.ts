@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigService } from '@nestjs/config'
 import { NetworksService } from '../../../../networks/networks.service'
-import { networkIdStub } from '../../../../networks/test/stubs'
+import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
 import { cinemasStub } from '../../../../cinemas/test/stubs'
 import { MultiplexService } from '../../services/multiplex.service'
@@ -37,7 +37,7 @@ describe('MultiplexService', () => {
     multiplexCinemasService = module.get<MultiplexCinemasService>(MultiplexCinemasService)
     multiplexShowtimesService = module.get<MultiplexShowtimesService>(MultiplexShowtimesService)
 
-    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkIdStub())
+    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub().id)
     jest.spyOn(configService, 'get').mockReturnValue(urlStub())
   })
 
@@ -53,7 +53,7 @@ describe('MultiplexService', () => {
 
       const result = await service.updateData()
 
-      expect(multiplexCinemasService.updateCinemas).toBeCalledWith(urlStub(), networkIdStub())
+      expect(multiplexCinemasService.updateCinemas).toBeCalledWith(urlStub(), networkStub().id)
       expect(cinemasRepository.getCinemas).toBeCalled()
       expect(multiplexShowtimesService.updateShowtimes).toBeCalledTimes(numberOfCinemas)
 

@@ -1,1 +1,1 @@
-export * from './network-id.stub'
+export * from './network.stub'

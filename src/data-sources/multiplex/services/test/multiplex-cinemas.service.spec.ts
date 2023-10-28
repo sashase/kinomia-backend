@@ -1,10 +1,11 @@
 import { NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
-import { networkIdStub } from '../../../../networks/test/stubs/network-id.stub'
+import { Network } from '@prisma/client'
+import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasService } from '../../../../cinemas/cinemas.service'
 import { processedCinemaStub } from '../../../../cinemas/test/stubs'
 import { ScraperService } from '../../../../data-sources/scraper.service'
-import { rootStub, emptyRootStub } from '../../../../data-sources/test/stubs'
+import { cinemasRootStub, emptyRootStub } from '../../../../data-sources/test/stubs'
 import { MultiplexCinemasService } from '../../services/multiplex-cinemas.service'
 import { cityStub, emptyCityStub, urlStub } from './stubs'
 
@@ -33,22 +34,25 @@ describe('MultiplexCinemasService', () => {
   })
 
   describe('updateCinemas', () => {
+    const url: string = urlStub()
+    const network: Network = networkStub()
+
     it('should call all necessary methods to update cinemas', async () => {
       service.processCity = jest.fn()
-      jest.spyOn(scraperService, 'getRoot').mockResolvedValue(rootStub())
+      jest.spyOn(scraperService, 'getRoot').mockResolvedValue(cinemasRootStub())
 
-      const numberOfCities: number = rootStub().querySelectorAll('.rm_clist').length
+      const numberOfCities: number = cinemasRootStub().querySelectorAll('.rm_clist').length
 
-      await service.updateCinemas(urlStub(), networkIdStub())
+      await service.updateCinemas(url, network.id)
 
+      expect(scraperService.getRoot).toBeCalledWith(url)
       expect(service.processCity).toBeCalledTimes(numberOfCities)
     })
-
 
     it('should throw an error if no city is found', async () => {
       jest.spyOn(scraperService, 'getRoot').mockResolvedValue(emptyRootStub())
 
-      await expect(service.updateCinemas(urlStub(), networkIdStub())).rejects.toThrowError(NotFoundException)
+      await expect(service.updateCinemas(url, network.id)).rejects.toThrowError(NotFoundException)
     })
   })
 
