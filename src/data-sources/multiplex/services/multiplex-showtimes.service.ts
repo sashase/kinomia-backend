@@ -11,25 +11,36 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
   constructor(private readonly scraperService: ScraperService, private readonly showtimesService: ShowtimesService) { }
 
   private readonly networkName: string = 'multiplex'
-  private cinemaId: number
-  private cinemaInternalId: string
 
-  async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string): Promise<void> {
-    const id = showtime.attributes['data-id']
+  filterShowtimes(showtimes: HTMLElement[]): HTMLElement[] {
+    /*
+        Filtering showtimes, 
+        we do not want to have showtimes that are sold out or showtimes with the 'buy_closest' class, 
+        those are duplicates and made only for UI/UX
+    */
+    const filteredShowtimes = Array.from(showtimes).filter((showtime) => {
+      const classes = showtime.getAttribute('class').split(' ')
+      return !classes.includes('buy_closest') && !classes.includes('locked')
+    })
+    return filteredShowtimes
+  }
+
+  async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
+    const id: string = showtime.attributes['data-id']
     if (!id) return
 
-    const orderLink = getOrderLink(id)
+    const orderLink: string = getOrderLink(id)
 
-    const internalShowtimeId = parseInt(id.split('-')[1])
-    const movieName = showtime.attributes['data-name']
-    const time = showtime.querySelector('p.time').text
-    const format = showtime.querySelector('p.tag').text
-    const price =
+    const internalShowtimeId: number = parseInt(id.split('-')[1])
+    const movieName: string = showtime.attributes['data-name']
+    const time: string = showtime.querySelector('p.time').text
+    const format: string = showtime.querySelector('p.tag').text
+    const price: number =
       format.split(' ')[0] === 'LUX'
         ? parseInt(showtime.attributes['data-high']) / 100
         : parseInt(showtime.attributes['data-low']) / 100
 
-    const combinedDateWithTime = combineDateWithTime(dayTimestamp, time)
+    const combinedDateWithTime: Date = combineDateWithTime(dayTimestamp, time)
 
     const processedShowtime: CreateShowtimeDto = {
       internal_showtime_id: internalShowtimeId,
@@ -40,42 +51,31 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
       price,
     }
 
-    await this.showtimesService.validateAndCreateShowtime(processedShowtime, this.cinemaId)
+    await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
   }
 
-  async processMovie(movie: HTMLElement): Promise<void> {
+  async processMovie(movie: HTMLElement, cinemaId: number): Promise<void> {
     const schedule = movie.querySelectorAll('.mpp_schedule')
 
     await Promise.all(schedule.map(async (day) => {
-      const dayTimestamp = day.attributes['data-selector']
-      const allShowtimes = day.querySelectorAll('div.ns')
+      const dayTimestamp: string = day.attributes['data-selector']
+      const allShowtimes: HTMLElement[] = day.querySelectorAll('div.ns')
 
-      /*
-             Filtering showtimes, 
-             we do not want to have showtimes that are sold out or showtimes with the 'buy_closest' class, 
-             those are duplicates and made only for UI/UX
-      */
-      const filteredShowtimes = Array.from(allShowtimes).filter((showtime) => {
-        const classes = showtime.getAttribute('class').split(' ')
-        return !classes.includes('buy_closest') && !classes.includes('locked')
-      })
+      const filteredShowtimes: HTMLElement[] = this.filterShowtimes(allShowtimes)
 
       await Promise.all(filteredShowtimes.map(async (showtime) => {
-        await this.formatAndCreateShowtime(showtime, dayTimestamp)
+        await this.formatAndCreateShowtime(showtime, dayTimestamp, cinemaId)
       }))
     }))
   }
 
   async updateShowtimes(url: string, cinemaId: number, cinemaInternalId: string): Promise<void> {
-    this.cinemaId = cinemaId
-    this.cinemaInternalId = cinemaInternalId
+    const root = await this.scraperService.getRoot(url, this.networkName, cinemaInternalId)
 
-    const root = await this.scraperService.getRoot(url, this.networkName, this.cinemaInternalId)
-
-    const movies: HTMLElement[] = root.querySelectorAll('div.mp_poster')
+    const movies: HTMLElement[] = root.querySelectorAll('.mp_poster')
 
     await Promise.all(movies.map(async (movie) => {
-      await this.processMovie(movie)
+      await this.processMovie(movie, cinemaId)
     }))
   }
 }
