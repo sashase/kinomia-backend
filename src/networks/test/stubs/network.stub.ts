@@ -1,4 +1,4 @@
-import { Network } from "@prisma/client"
+import { Network } from '@prisma/client'
 
 export const networkStub = (): Network => {
   return {
