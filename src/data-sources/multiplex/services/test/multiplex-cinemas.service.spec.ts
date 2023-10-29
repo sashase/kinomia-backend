@@ -7,8 +7,7 @@ import { processedCinemaStub } from '../../../../cinemas/test/stubs'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { cinemasRootStub, emptyRootStub } from '../../../../data-sources/test/stubs'
 import { MultiplexCinemasService } from '../../services/multiplex-cinemas.service'
-import { cityStub, emptyCityStub, urlStub } from './stubs'
-
+import { cityStub, urlStub } from './stubs'
 
 describe('MultiplexCinemasService', () => {
   let service: MultiplexCinemasService
@@ -66,10 +65,6 @@ describe('MultiplexCinemasService', () => {
 
       expect(cinemasService.validateAndCreateCinema).toBeCalledTimes(numberOfCinemas)
       expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), service['networkId'])
-    })
-
-    it('should throw an error if no cinema is found', async () => {
-      await expect(service.processCity(emptyCityStub())).rejects.toThrowError(NotFoundException)
     })
   })
 })

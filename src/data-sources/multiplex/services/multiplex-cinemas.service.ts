@@ -16,8 +16,6 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
 
     const cinemas = city.querySelectorAll('.cinema')
 
-    if (!cinemas.length) throw new NotFoundException('No cinemas found on the page | Multiplex')
-
     await Promise.all(cinemas.map(async (cinema) => {
       const id = cinema.attributes['data-id']
       const name = cinema.attributes['data-name']
@@ -41,7 +39,7 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
 
     const citiesList = root.querySelectorAll('.rm_clist')
 
-    if (!citiesList.length) throw new NotFoundException('No city found on the page | Multiplex')
+    if (!citiesList.length) throw new NotFoundException('No city is found on the page | Multiplex')
 
     await Promise.all(citiesList.map(async (city) => {
       await this.processCity(city)
