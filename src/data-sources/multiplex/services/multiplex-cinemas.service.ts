@@ -9,9 +9,9 @@ import { ScraperService } from '../../scraper.service'
 export class MultiplexCinemasService implements DataSourceCinemasService {
   constructor(private readonly scraperService: ScraperService, private readonly cinemasService: CinemasService) { }
 
-  private networkId: number
+  private readonly networkName: string = 'multiplex'
 
-  async processCity(city: HTMLElement): Promise<void> {
+  async processCity(city: HTMLElement, networkId: number): Promise<void> {
     const cityName = city.attributes['data-cityname']
 
     const cinemas = city.querySelectorAll('.cinema')
@@ -28,21 +28,19 @@ export class MultiplexCinemasService implements DataSourceCinemasService {
         address
       }
 
-      await this.cinemasService.validateAndCreateCinema(processedCinema, this.networkId)
+      await this.cinemasService.validateAndCreateCinema(processedCinema, networkId)
     }))
   }
 
   async updateCinemas(url: string, networkId: number): Promise<void> {
-    this.networkId = networkId
-
-    const root = await this.scraperService.getRoot(url)
+    const root = await this.scraperService.getRoot(url, this.networkName)
 
     const citiesList = root.querySelectorAll('.rm_clist')
 
     if (!citiesList.length) throw new NotFoundException('No city is found on the page | Multiplex')
 
     await Promise.all(citiesList.map(async (city) => {
-      await this.processCity(city)
+      await this.processCity(city, networkId)
     }))
   }
 }

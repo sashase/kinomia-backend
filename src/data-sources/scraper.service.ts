@@ -1,26 +1,12 @@
-import { HttpException, Injectable } from '@nestjs/common'
-import axios, { AxiosError, AxiosResponse } from 'axios'
+import { BadGatewayException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common'
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { HTMLElement, parse } from 'node-html-parser'
 
 @Injectable()
 export class ScraperService {
   constructor() { }
 
-  async getRoot(url: string, network?: string, internalCinemaId?: string): Promise<HTMLElement> {
-    let cookie: string
-
-    switch (network) {
-      case 'multiplex':
-        if (internalCinemaId) cookie = `cinemaN=${internalCinemaId.padStart(10, '0')}`
-        break
-
-      default:
-        cookie = ''
-        break
-    }
-
-    const config = { headers: { Cookie: cookie ?? '' } }
-
+  async getHtml(url: string, config: AxiosRequestConfig): Promise<any> {
     const { data } = await axios
       .get(url, config)
       .then((res: AxiosResponse) => Promise.resolve(res))
@@ -28,9 +14,29 @@ export class ScraperService {
         console.log(error)
         throw new HttpException(error.response.statusText, error.response.status)
       })
+    return data
+  }
 
-    const root = parse(data)
+  async getRoot(url: string, network: string, internalCinemaId?: string, dateStart?: string, dateEnd?: string): Promise<HTMLElement> {
+    switch (network) {
+      case 'multiplex': {
+        const config = { headers: { Cookie: `cinemaN=${internalCinemaId}` } }
+        const html = await this.getHtml(url, config)
+        return parse(html)
+      }
 
-    return root
+      case 'oskar': {
+        if (!dateStart) throw new InternalServerErrorException('dateStart is undefined | Oskar | Scraper service')
+
+        const requestUrl: string = `${url}/${internalCinemaId}/sessions/ajax?date_select=${dateStart}`
+        const html = await this.getHtml(requestUrl, {})
+
+        if (!html.filter_results) throw new BadGatewayException('Bad response from the external resource | Oskar | Scraper Service')
+
+        return parse(html.filter_results)
+      }
+      default:
+        throw new InternalServerErrorException('network has unprocessable value | Scraper service')
+    }
   }
 }

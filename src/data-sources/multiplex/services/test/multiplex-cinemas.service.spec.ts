@@ -44,7 +44,7 @@ describe('MultiplexCinemasService', () => {
 
       await service.updateCinemas(url, network.id)
 
-      expect(scraperService.getRoot).toBeCalledWith(url)
+      expect(scraperService.getRoot).toBeCalledWith(url, service['networkName'])
       expect(service.processCity).toBeCalledTimes(numberOfCities)
     })
 
@@ -58,13 +58,14 @@ describe('MultiplexCinemasService', () => {
   describe('processCity', () => {
     it('should call cinemasService for each cinema', async () => {
       jest.spyOn(cinemasService, 'validateAndCreateCinema').mockResolvedValue()
+      const network = networkStub()
 
       const numberOfCinemas: number = cityStub().querySelectorAll('.cinema').length
 
-      await service.processCity(cityStub())
+      await service.processCity(cityStub(), network.id)
 
       expect(cinemasService.validateAndCreateCinema).toBeCalledTimes(numberOfCinemas)
-      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), service['networkId'])
+      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), network.id)
     })
   })
 })
