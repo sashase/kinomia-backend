@@ -1,5 +1,5 @@
 export class CreateShowtimeDto {
-  internal_showtime_id: number
+  internal_showtime_id?: number
   movie: string
   date: Date
   format?: string

@@ -9,7 +9,7 @@ datasource db {
 
 model Showtime {
   id                   Int      @id @default(autoincrement())
-  internal_showtime_id Int
+  internal_showtime_id Int?
   movie                String
   date                 DateTime
   format               String?
