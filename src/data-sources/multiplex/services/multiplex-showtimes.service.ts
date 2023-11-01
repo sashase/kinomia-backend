@@ -4,7 +4,7 @@ import { DataSourceShowtimesService } from '../../../interfaces/data-sources'
 import { ShowtimesService } from '../../../showtimes/showtimes.service'
 import { CreateShowtimeDto } from '../../../showtimes/dtos'
 import { ScraperService } from '../../scraper.service'
-import { combineDateWithTime, getOrderLink } from '../utils'
+import { combineDateWithTime, getOrderLink, filterShowtimes } from '../utils'
 
 @Injectable()
 export class MultiplexShowtimesService implements DataSourceShowtimesService {
@@ -12,22 +12,8 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
 
   private readonly networkName: string = 'multiplex'
 
-  filterShowtimes(showtimes: HTMLElement[]): HTMLElement[] {
-    /*
-        Filtering showtimes, 
-        we do not want to have showtimes that are sold out or showtimes with the 'buy_closest' class, 
-        those are duplicates and made only for UI/UX
-    */
-    const filteredShowtimes = Array.from(showtimes).filter((showtime) => {
-      const classes = showtime.getAttribute('class').split(' ')
-      return !classes.includes('buy_closest') && !classes.includes('locked')
-    })
-    return filteredShowtimes
-  }
-
   async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
     const id: string = showtime.attributes['data-id']
-    if (!id) return
 
     const orderLink: string = getOrderLink(id)
 
@@ -61,7 +47,7 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
       const dayTimestamp: string = day.attributes['data-selector']
       const allShowtimes: HTMLElement[] = day.querySelectorAll('div.ns')
 
-      const filteredShowtimes: HTMLElement[] = this.filterShowtimes(allShowtimes)
+      const filteredShowtimes: HTMLElement[] = filterShowtimes(allShowtimes)
 
       await Promise.all(filteredShowtimes.map(async (showtime) => {
         await this.formatAndCreateShowtime(showtime, dayTimestamp, cinemaId)

@@ -65,7 +65,7 @@ describe('MultiplexCinemasService', () => {
       await service.processCity(cityStub(), network.id)
 
       expect(cinemasService.validateAndCreateCinema).toBeCalledTimes(numberOfCinemas)
-      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub(), network.id)
+      expect(cinemasService.validateAndCreateCinema).toBeCalledWith(processedCinemaStub('multiplex'), network.id)
     })
   })
 })

@@ -1,3 +1,7 @@
+const filterShowtimesMock = jest.fn()
+const getOrderLinkMock = jest.fn()
+const combineDateWithTimeMock = jest.fn()
+
 import { Test, TestingModule } from '@nestjs/testing'
 import { Cinema } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
@@ -6,8 +10,13 @@ import { ShowtimesService } from '../../../../showtimes/showtimes.service'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { showtimesRootStub } from '../../../../data-sources/test/stubs'
 import { MultiplexShowtimesService } from '../multiplex-showtimes.service'
-import { filteredShowtimesStub, showtimesStub, movieStub, timestampStub, urlStub } from './stubs'
+import { filteredShowtimesStub, movieStub, timestampStub, urlStub, formattedShowtimeStub } from './stubs'
 
+jest.mock('../../utils', () => ({
+  filterShowtimes: filterShowtimesMock,
+  getOrderLink: getOrderLinkMock,
+  combineDateWithTime: combineDateWithTimeMock
+}))
 
 describe('MultiplexShowtimesService', () => {
   let service: MultiplexShowtimesService
@@ -39,9 +48,9 @@ describe('MultiplexShowtimesService', () => {
 
     it('should call all necessary methods to update showtimes', async () => {
       service.processMovie = jest.fn()
-      jest.spyOn(scraperService, 'getRoot').mockResolvedValue(showtimesRootStub())
+      jest.spyOn(scraperService, 'getRoot').mockResolvedValue(showtimesRootStub('multiplex'))
 
-      const numberOfMovies: number = showtimesRootStub().querySelectorAll('.mp_poster').length
+      const numberOfMovies: number = showtimesRootStub('multiplex').querySelectorAll('.mp_poster').length
 
       await service.updateShowtimes(url, cinema.id, cinema.internal_cinema_id)
 
@@ -54,41 +63,43 @@ describe('MultiplexShowtimesService', () => {
     const cinema: Cinema = cinemasStub()[0]
     const movie: HTMLElement = movieStub()
     const filteredShowtimes: HTMLElement[] = filteredShowtimesStub()
+    const numberOfDays: number = movie.querySelectorAll('.mpp_schedule').length
 
     it('should call filterShowtimes for each day of a movie schedule', async () => {
-      jest.spyOn(service, 'filterShowtimes').mockReturnValue(filteredShowtimes)
-
-      const numberOfDays: number = movie.querySelectorAll('.mpp_schedule').length
+      filterShowtimesMock.mockReturnValue(filteredShowtimes)
 
       await service.processMovie(movie, cinema.id)
 
-      expect(service.filterShowtimes).toBeCalledTimes(numberOfDays)
+      expect(filterShowtimesMock).toBeCalledTimes(numberOfDays)
     })
 
     it('should call formatAndCreateShowtime for each filtered showtime', async () => {
       jest.spyOn(service, 'formatAndCreateShowtime').mockResolvedValue()
 
-      const totalNumberOfShowtimes: number = filteredShowtimes.length
+      const numberOfShowtimesPerDay: number = filteredShowtimes.length
 
       await service.processMovie(movie, cinema.id)
 
-      expect(service.formatAndCreateShowtime).toBeCalledTimes(totalNumberOfShowtimes)
+      expect(service.formatAndCreateShowtime).toBeCalledTimes(numberOfShowtimesPerDay * numberOfDays)
     })
   })
 
-  // describe('filterShowtimes', () => {
-  //   it('should filter and return valid showtimes', () => {
-  //     const filteredShowtimes: HTMLElement[] = service.filterShowtimes(showtimesStub())
-
-  //     expect(filteredShowtimes).toBe(filteredShowtimesStub())
-  //   })
-  // })
-
   describe('formatAndCreateShowtime', () => {
-    it('should process a showtime and call showtimesService to create showtime', async () => {
-      await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemasStub()[0].id)
+    const cinemaId: number = cinemasStub()[0].id
 
-      expect(showtimesService.validateAndCreateShowtime).toBeCalled()
+    combineDateWithTimeMock.mockReturnValue(new Date(2023, 11, 30, 12, 0, 0))
+    getOrderLinkMock.mockReturnValue('https://new.multiplex.ua/order/cinema/0000000017/session/224146')
+
+    it('should correctly process showtime without format', async () => {
+      await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
+
+      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub(), cinemaId)
+    })
+
+    it('should correctly process LUX format showtime', async () => {
+      await service.formatAndCreateShowtime(filteredShowtimesStub('LUX')[0], timestampStub(), cinemaId)
+
+      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub('LUX'), cinemaId)
     })
   })
 })
