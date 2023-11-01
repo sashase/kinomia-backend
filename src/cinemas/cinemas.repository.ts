@@ -18,13 +18,13 @@ export class CinemasRepository {
   }
 
   async getCinema(params: {
-    select?: Prisma.CinemaSelect, include?: Prisma.CinemaInclude, where: Prisma.CinemaWhereUniqueInput
+    select?: Prisma.CinemaSelect, where: Prisma.CinemaWhereInput
   }): Promise<Cinema> {
-    const { select, include, where } = params
-    return this.prisma.cinema.findUnique({ select, include, where } as Prisma.CinemaFindUniqueArgs)
+    const { select, where } = params
+    return this.prisma.cinema.findFirst({ select, where })
   }
 
-  async createCinema(params: { data: Prisma.CinemaUncheckedCreateInput }): Promise<Cinema> {
+  async createCinema(params: { data: Prisma.CinemaCreateInput }): Promise<Cinema> {
     const { data } = params
     return this.prisma.cinema.create({ data })
   }

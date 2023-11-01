@@ -8,21 +8,39 @@ datasource db {
 }
 
 model Showtime {
-  id         Int      @id @default(autoincrement())
-  movie      String
-  date       DateTime
-  format     String?
-  price      Int?
-  order_link String?
-  imdb_link  String?
-  cinema     Cinema   @relation(fields: [cinemaId], references: [id])
-  cinemaId   Int
+  id                   Int      @id @default(autoincrement())
+  internal_showtime_id Int?
+  movie                String
+  date                 DateTime
+  format               String?
+  price                Int?
+  order_link           String?
+  imdb_link            String?
+
+  cinema    Cinema @relation(fields: [cinema_id], references: [id])
+  cinema_id Int
+
+  @@unique([internal_showtime_id, cinema_id])
 }
 
 model Cinema {
-  id        Int        @id @default(autoincrement())
-  name      String
-  city      String?
-  address   String?
+  id                 Int     @id @default(autoincrement())
+  internal_cinema_id String
+  name               String
+  city               String?
+  address            String?
+
+  network    Network @relation(fields: [network_id], references: [id])
+  network_id Int
+
   showtimes Showtime[]
+
+  @@unique([internal_cinema_id, network_id])
+}
+
+model Network {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  cinemas Cinema[]
 }
