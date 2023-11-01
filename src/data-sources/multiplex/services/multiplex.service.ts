@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { Cron, CronExpression } from '@nestjs/schedule'
 import { Cinema } from '@prisma/client'
 import { DataSourceService } from '../../../interfaces/data-sources'
 import { NetworksService } from '../../../networks/networks.service'
@@ -15,9 +16,11 @@ export class MultiplexService implements DataSourceService {
     private readonly multiplexCinemasService: MultiplexCinemasService,
     private readonly multiplexShowtimesService: MultiplexShowtimesService) { }
 
+  private readonly networkName: string = 'multiplex'
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateData(): Promise<{ message: string, code: number }> {
-    const networkName: string = 'multiplex'
-    const networkId: number = await this.networksService.getNetworkIdByName(networkName)
+    const networkId: number = await this.networksService.getNetworkIdByName(this.networkName)
     const url: string = this.configService.get('dataSources.multiplexUrl', { infer: true })
 
     await this.multiplexCinemasService.updateCinemas(url, networkId)

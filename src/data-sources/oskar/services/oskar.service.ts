@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { Cron, CronExpression } from '@nestjs/schedule'
 import { Cinema } from '@prisma/client'
 import { DataSourceService } from '../../../interfaces/data-sources'
 import { NetworksService } from '../../../networks/networks.service'
@@ -19,6 +20,7 @@ export class OskarService implements DataSourceService {
 
   private readonly networkName: string = 'oskar'
 
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateData(): Promise<{ message: string, code: number }> {
     const networkId: number = await this.networksService.getNetworkIdByName(this.networkName)
     const url: string = this.configService.get('dataSources.oskarUrl', { infer: true })
