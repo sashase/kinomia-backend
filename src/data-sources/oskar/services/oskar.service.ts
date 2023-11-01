@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Cinema } from '@prisma/client'
 import { DataSourceService } from '../../../interfaces/data-sources'
@@ -20,31 +20,29 @@ export class OskarService implements DataSourceService {
   private readonly networkName: string = 'oskar'
 
   async updateData(): Promise<{ message: string, code: number }> {
-    try {
-      const networkId: number = await this.networksService.getNetworkIdByName(this.networkName)
-      const url: string = this.configService.get('dataSources.oskarUrl', { infer: true })
+    const networkId: number = await this.networksService.getNetworkIdByName(this.networkName)
+    const url: string = this.configService.get('dataSources.oskarUrl', { infer: true })
 
-      await this.oskarCinemasService.updateCinemas(networkId)
+    await this.oskarCinemasService.updateCinemas(networkId)
 
-      const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
+    const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
 
-      // Array of dates in format 'yyyy-mm-dd' until next Wednesday
-      const dates: string[] = getDates()
+    if (!cinemas) throw new NotFoundException('Cinemas not found')
 
-      await Promise.all(cinemas.map(async (cinema) => {
-        await dates.map(async (date) => {
-          await this.oskarShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id, date)
-        })
-      }))
+    // Array of dates in format 'yyyy-mm-dd' until next Wednesday
+    const dates: string[] = getDates()
 
-      return {
-        message: 'Oskar Data Successfully Updated',
-        code: 200
-      }
-    }
-    catch (error) {
-      console.log(error)
-      throw new InternalServerErrorException(error)
+    if (!dates || !dates.length) throw new InternalServerErrorException('Dates array cannot be generated')
+
+    await Promise.all(cinemas.map(async (cinema) => {
+      await dates.map(async (date) => {
+        await this.oskarShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id, date)
+      })
+    }))
+
+    return {
+      message: 'Oskar Data Successfully Updated',
+      code: 200
     }
   }
 }

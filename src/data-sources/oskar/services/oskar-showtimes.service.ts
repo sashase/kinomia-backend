@@ -25,7 +25,9 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
     )
 
     for (let i = 0; i < times.length; i++) {
-      const time = times[i].text
+      const time = times[i].querySelector('span.time')?.text
+      if (!time) continue
+
       const combinedDate = combineDateWithTime(date, time)
 
       const combinedFormats: string = combineFormatElements(formats[i])
