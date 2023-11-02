@@ -14,11 +14,12 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
 
   async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
     const id: string = showtime.attributes['data-id']
+    const tmdbId: number = 10
 
     const orderLink: string = getOrderLink(id)
 
     const internalShowtimeId: number = parseInt(id.split('-')[1])
-    const movieName: string = showtime.attributes['data-name']
+    const title: string = showtime.attributes['data-name']
     const time: string = showtime.querySelector('p.time').text
     const format: string = showtime.querySelector('p.tag').text
     const price: number =
@@ -30,8 +31,9 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
 
     const processedShowtime: CreateShowtimeDto = {
       internal_showtime_id: internalShowtimeId,
-      movie: movieName,
+      title: title,
       date: combinedDateWithTime,
+      tmdb_id: tmdbId,
       format: format,
       order_link: orderLink,
       price,

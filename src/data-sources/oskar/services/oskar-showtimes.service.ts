@@ -13,9 +13,10 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
   private readonly networkName: string = 'oskar'
 
   async processMovie(movie: HTMLElement, cinemaId: number, date: string): Promise<void> {
-    const movieName: string = movie
+    const title: string = movie
       .querySelector('div.filter-result__name')
       .querySelector('a').text
+    const tmdbId = 10
 
     const showtimesWrapper: HTMLElement = movie.querySelector('div.filter-result__time-wrap')
 
@@ -35,9 +36,10 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
       const orderLink = `https://oskar.kyiv.ua${times[i].getAttribute('href')}`
 
       const processedShowtime: CreateShowtimeDto = {
-        movie: movieName,
+        title: title,
         date: combinedDate,
         format: combinedFormats,
+        tmdb_id: tmdbId,
         order_link: orderLink
       }
 
