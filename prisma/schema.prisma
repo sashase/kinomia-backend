@@ -8,8 +8,8 @@ datasource db {
 }
 
 model Movie {
-  id      Int @id @default(autoincrement())
-  tmdb_id Int @unique
+  id    Int    @id
+  title String
 
   showtimes Showtime[]
 }
@@ -26,8 +26,8 @@ model Showtime {
 
   cinema    Cinema @relation(fields: [cinema_id], references: [id])
   cinema_id Int
-  movie     Movie  @relation(fields: [tmdb_id], references: [id])
-  tmdb_id   Int
+  movie     Movie  @relation(fields: [movie_id], references: [id])
+  movie_id  Int
 
   @@unique([internal_showtime_id, cinema_id])
 }

@@ -5,5 +5,9 @@ export default (): Config => ({
   dataSources: {
     multiplexUrl: 'https://multiplex.ua',
     oskarUrl: 'https://oskar.kyiv.ua'
+  },
+  tmdbApi: {
+    url: 'https://api.themoviedb.org/3',
+    key: process.env.TMDB_API_KEY
   }
 })

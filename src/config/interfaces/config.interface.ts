@@ -4,4 +4,8 @@ export interface Config {
     multiplexUrl: string
     oskarUrl: string
   }
+  tmdbApi: {
+    url: string
+    key: string
+  }
 }
