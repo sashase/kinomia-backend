@@ -41,7 +41,7 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
         title: title,
         date: combinedDate,
         format: combinedFormats,
-        tmdb_id: tmdbId,
+        movie_id: tmdbId,
         order_link: orderLink
       }
 
