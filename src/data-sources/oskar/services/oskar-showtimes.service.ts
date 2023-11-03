@@ -28,13 +28,15 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
       const time = times[i].querySelector('span.time')?.text
       if (!time) continue
 
+      const showtimeLink = times[i].getAttribute('href')
+
+      const internalShowtimeId: number = parseInt(showtimeLink.split('&')[1].split('=')[1])
       const combinedDate = combineDateWithTime(date, time)
-
       const combinedFormats: string = combineFormatElements(formats[i])
-
-      const orderLink = `https://oskar.kyiv.ua${times[i].getAttribute('href')}`
+      const orderLink = `https://oskar.kyiv.ua${showtimeLink}`
 
       const processedShowtime: CreateShowtimeDto = {
+        internal_showtime_id: internalShowtimeId,
         movie: movieName,
         date: combinedDate,
         format: combinedFormats,
