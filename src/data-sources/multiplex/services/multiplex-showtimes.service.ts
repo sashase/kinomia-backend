@@ -19,18 +19,18 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
   private readonly networkName: string = 'multiplex'
 
   async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
-    let movieId: number
+    let movie: Movie
 
     const title: string = showtime.attributes['data-name']
 
-    const movie: Movie = await this.moviesService.getMovieByTitle(title)
+    movie = await this.moviesService.getMovieByTitle(title)
 
     if (!movie) {
       const createdMovie: Movie = await this.moviesService.createMovie(title)
-      if (!createdMovie?.id) return
-      movieId = createdMovie.id
+      if (!createdMovie) return
+      movie = createdMovie
     } else {
-      movieId = movie.id
+      movie = movie
     }
 
     const id: string = showtime.attributes['data-id']
@@ -48,12 +48,11 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
 
     const processedShowtime: CreateShowtimeDto = {
       internal_showtime_id: internalShowtimeId,
-      title: title,
       date: combinedDateWithTime,
-      movie_id: movieId,
       format: format,
       order_link: orderLink,
       price,
+      movie
     }
 
     await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
