@@ -27,7 +27,7 @@ export class MoviesService {
 
     if (!tmdbData?.id) return
 
-    const movie = await this.moviesRepository.getMovie({ where: { id: tmdbData.id } })
+    const movie = await this.moviesRepository.getMovie({ where: { OR: [{ id: tmdbData.id }, { title }] } })
     if (movie) return movie
 
     const dto: CreateMovieDto = {

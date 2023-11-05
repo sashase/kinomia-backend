@@ -1,6 +1,6 @@
 import { HTMLElement, parse } from 'node-html-parser'
 
-export const movieStub = (): HTMLElement => {
+export const movieElementStub = (): HTMLElement => {
   const html: string = `
             <div class="filter-result__item">
               <div class="filter-result__visual">

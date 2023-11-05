@@ -36,11 +36,11 @@ export class OskarService implements DataSourceService {
 
     if (!dates || !dates.length) throw new InternalServerErrorException('Dates array cannot be generated')
 
-    await Promise.all(cinemas.map(async (cinema) => {
-      await dates.map(async (date) => {
-        await this.oskarShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id, date)
-      })
-    }))
+    for (let i = 0; i < cinemas.length; i++) {
+      for (let j = 0; j < dates.length; j++) {
+        await this.oskarShowtimesService.updateShowtimes(url, cinemas[i].id, cinemas[i].internal_cinema_id, dates[j])
+      }
+    }
 
     return {
       message: 'Oskar Data Successfully Updated',
