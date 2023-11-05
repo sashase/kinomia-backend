@@ -8,7 +8,8 @@ export class ShowtimesService {
   constructor(private readonly showtimesRepository: ShowtimesRepository, private readonly cinemasRepository: CinemasRepository) { }
 
   async validateAndCreateShowtime(showtime: CreateShowtimeDto, cinemaId: number): Promise<void> {
-    const { internal_showtime_id } = showtime
+    const { movie, internal_showtime_id, ...rest } = showtime
+    const { id, title } = movie
 
     const cinemaExists = await this.cinemasRepository.getCinema({ where: { id: cinemaId } })
     if (!cinemaExists) return
@@ -21,7 +22,11 @@ export class ShowtimesService {
         cinema: {
           connect: { id: cinemaId }
         },
-        ...showtime
+        movie: {
+          connect: { id_title: { id, title } }
+        },
+        internal_showtime_id,
+        ...rest
       }
     })
   }

@@ -7,18 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Movie {
+  id    Int
+  title String
+
+  showtimes Showtime[]
+
+  @@id([id, title])
+}
+
 model Showtime {
   id                   Int      @id @default(autoincrement())
   internal_showtime_id Int
-  movie                String
   date                 DateTime
   format               String?
   price                Int?
   order_link           String?
   imdb_link            String?
 
-  cinema    Cinema @relation(fields: [cinema_id], references: [id])
-  cinema_id Int
+  cinema      Cinema @relation(fields: [cinema_id], references: [id])
+  cinema_id   Int
+  movie       Movie  @relation(fields: [movie_id, movie_title], references: [id, title])
+  movie_id    Int
+  movie_title String
 
   @@unique([internal_showtime_id, cinema_id])
 }

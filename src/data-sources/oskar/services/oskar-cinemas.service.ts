@@ -23,8 +23,8 @@ export class OskarCinemasService implements DataSourceCinemasService {
   }
 
   async updateCinemas(networkId: number): Promise<void> {
-    await Promise.all(this.cinemas.map(async (cinema) => {
-      await this.processCinema(cinema, networkId)
-    }))
+    for (let i = 0; i < this.cinemas.length; i++) {
+      await this.processCinema(this.cinemas[i], networkId)
+    }
   }
 }

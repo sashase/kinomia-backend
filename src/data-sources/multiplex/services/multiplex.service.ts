@@ -29,9 +29,9 @@ export class MultiplexService implements DataSourceService {
 
     if (!cinemas) throw new NotFoundException('Cinemas not found')
 
-    await Promise.all(cinemas.map(async (cinema) => {
-      await this.multiplexShowtimesService.updateShowtimes(url, cinema.id, cinema.internal_cinema_id)
-    }))
+    for (let i = 0; i < cinemas.length; i++) {
+      await this.multiplexShowtimesService.updateShowtimes(url, cinemas[i].id, cinemas[i].internal_cinema_id)
+    }
 
     return {
       message: 'Multiplex Data Successfully Updated',

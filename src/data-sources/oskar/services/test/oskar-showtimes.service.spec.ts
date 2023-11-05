@@ -8,9 +8,10 @@ import { cinemasStub } from '../../../../cinemas/test/stubs'
 import { ShowtimesService } from '../../../../showtimes/showtimes.service'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { showtimesRootStub } from '../../../../data-sources/test/stubs'
-import { combinedDateWithTimeStub, combinedFormatElementsStub, datesStub, urlStub } from './stubs'
+import { MoviesService } from '../../../../movies/movies.service'
+import { movieStub } from '../../../../movies/test/stubs'
 import { OskarShowtimesService } from '../oskar-showtimes.service'
-import { movieStub } from './stubs'
+import { combinedDateWithTimeStub, combinedFormatElementsStub, datesStub, movieElementStub, urlStub } from './stubs'
 
 jest.mock('../../utils', () => ({
   combineDateWithTime: combineDateWithTimeMock,
@@ -21,6 +22,7 @@ describe('OskarShowtimesService', () => {
   let service: OskarShowtimesService
   let scraperService: ScraperService
   let showtimesService: ShowtimesService
+  let moviesService: MoviesService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -28,12 +30,14 @@ describe('OskarShowtimesService', () => {
         OskarShowtimesService,
         { provide: ScraperService, useValue: { getRoot: jest.fn() } },
         { provide: ShowtimesService, useValue: { validateAndCreateShowtime: jest.fn() } },
+        { provide: MoviesService, useValue: { getMovieByTitle: jest.fn(), createMovie: jest.fn() } },
       ],
     }).compile()
 
     service = module.get<OskarShowtimesService>(OskarShowtimesService)
     scraperService = module.get<ScraperService>(ScraperService)
     showtimesService = module.get<ShowtimesService>(ShowtimesService)
+    moviesService = module.get<MoviesService>(MoviesService)
 
   })
 
@@ -61,7 +65,7 @@ describe('OskarShowtimesService', () => {
 
   describe('processMovie', () => {
     const cinema: Cinema = cinemasStub()[0]
-    const movie: HTMLElement = movieStub()
+    const movie: HTMLElement = movieElementStub()
     const date = datesStub()[0]
     const combinedDateWithTime = combinedDateWithTimeStub()
     const combinedFormatElements = combinedFormatElementsStub()
@@ -72,7 +76,31 @@ describe('OskarShowtimesService', () => {
     combineDateWithTimeMock.mockReturnValue(combinedDateWithTime)
     combineFormatElementsMock.mockReturnValue(combinedFormatElements)
 
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should call getMovieByTitle', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+
+      await service.processMovie(movie, cinema.id, date)
+
+      expect(moviesService.getMovieByTitle).toBeCalled()
+    })
+
+    it('should call createMovie if getMovieByTitle returned null', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(null)
+      jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
+
+      await service.processMovie(movie, cinema.id, date)
+
+      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.createMovie).toBeCalled()
+    })
+
     it('should call all helpers methods for each showtime & skipping showtimes without time element', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+
       await service.processMovie(movie, cinema.id, date)
 
       expect(combineDateWithTimeMock).toBeCalledTimes(totalNumberOfShowtimes)
@@ -80,10 +108,11 @@ describe('OskarShowtimesService', () => {
     })
 
     it('should call showtimesService for each showtime to create a showtime', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+
       await service.processMovie(movie, cinema.id, date)
 
       expect(showtimesService.validateAndCreateShowtime).toBeCalledTimes(totalNumberOfShowtimes)
     })
-
   })
 })

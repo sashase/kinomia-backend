@@ -9,8 +9,10 @@ import { cinemasStub } from '../../../../cinemas/test/stubs'
 import { ShowtimesService } from '../../../../showtimes/showtimes.service'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { showtimesRootStub } from '../../../../data-sources/test/stubs'
+import { MoviesService } from '../../../../movies/movies.service'
+import { movieStub } from '../../../../movies/test/stubs'
 import { MultiplexShowtimesService } from '../multiplex-showtimes.service'
-import { filteredShowtimesStub, movieStub, timestampStub, urlStub, formattedShowtimeStub } from './stubs'
+import { filteredShowtimesStub, movieElementStub, timestampStub, urlStub, formattedShowtimeStub } from './stubs'
 
 jest.mock('../../utils', () => ({
   filterShowtimes: filterShowtimesMock,
@@ -22,6 +24,7 @@ describe('MultiplexShowtimesService', () => {
   let service: MultiplexShowtimesService
   let scraperService: ScraperService
   let showtimesService: ShowtimesService
+  let moviesService: MoviesService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,12 +32,14 @@ describe('MultiplexShowtimesService', () => {
         MultiplexShowtimesService,
         { provide: ScraperService, useValue: { getRoot: jest.fn() } },
         { provide: ShowtimesService, useValue: { validateAndCreateShowtime: jest.fn() } },
+        { provide: MoviesService, useValue: { getMovieByTitle: jest.fn(), createMovie: jest.fn() } },
       ],
     }).compile()
 
     service = module.get<MultiplexShowtimesService>(MultiplexShowtimesService)
     scraperService = module.get<ScraperService>(ScraperService)
     showtimesService = module.get<ShowtimesService>(ShowtimesService)
+    moviesService = module.get<MoviesService>(MoviesService)
 
   })
 
@@ -61,7 +66,7 @@ describe('MultiplexShowtimesService', () => {
 
   describe('processMovie', () => {
     const cinema: Cinema = cinemasStub()[0]
-    const movie: HTMLElement = movieStub()
+    const movie: HTMLElement = movieElementStub()
     const filteredShowtimes: HTMLElement[] = filteredShowtimesStub()
     const numberOfDays: number = movie.querySelectorAll('.mpp_schedule').length
 
@@ -90,13 +95,37 @@ describe('MultiplexShowtimesService', () => {
     combineDateWithTimeMock.mockReturnValue(new Date(2023, 11, 30, 12, 0, 0))
     getOrderLinkMock.mockReturnValue('https://new.multiplex.ua/order/cinema/0000000017/session/224146')
 
+    it('should call getMovieByTitle', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+
+      await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
+
+      expect(moviesService.getMovieByTitle).toBeCalled()
+    })
+
+    it('should call createMovie if getMovieByTitle returned null', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(null)
+      jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
+
+      await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
+
+      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.createMovie).toBeCalled()
+    })
+
     it('should correctly process showtime without format', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
+
       await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
 
       expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub(), cinemaId)
     })
 
     it('should correctly process LUX format showtime', async () => {
+      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
+
       await service.formatAndCreateShowtime(filteredShowtimesStub('LUX')[0], timestampStub(), cinemaId)
 
       expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub('LUX'), cinemaId)

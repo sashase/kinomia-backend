@@ -1,6 +1,6 @@
 import { HTMLElement, parse } from 'node-html-parser'
 
-export const movieStub = (): HTMLElement => {
+export const movieElementStub = (): HTMLElement => {
   const html: string = `
             <div data-href="/movie/355542" class="mp_poster" style="width: 350px;">
                 <p class="closing_tag">

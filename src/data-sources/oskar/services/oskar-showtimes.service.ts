@@ -1,23 +1,41 @@
 import { Injectable } from '@nestjs/common'
+import { Movie } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
 import { DataSourceShowtimesService } from '../../../interfaces/data-sources'
 import { ShowtimesService } from '../../../showtimes/showtimes.service'
 import { CreateShowtimeDto } from '../../../showtimes/dtos'
+import { MoviesService } from '../../../movies/movies.service'
 import { ScraperService } from '../../scraper.service'
 import { combineDateWithTime, combineFormatElements } from '../utils'
 
 @Injectable()
 export class OskarShowtimesService implements DataSourceShowtimesService {
-  constructor(private readonly scraperService: ScraperService, private readonly showtimesService: ShowtimesService) { }
+  constructor(
+    private readonly scraperService: ScraperService,
+    private readonly showtimesService: ShowtimesService,
+    private readonly moviesService: MoviesService
+  ) { }
 
   private readonly networkName: string = 'oskar'
 
-  async processMovie(movie: HTMLElement, cinemaId: number, date: string): Promise<void> {
-    const movieName: string = movie
+  async processMovie(movieElement: HTMLElement, cinemaId: number, date: string): Promise<void> {
+    let movie: Movie
+
+    const title: string = movieElement
       .querySelector('div.filter-result__name')
       .querySelector('a').text
 
-    const showtimesWrapper: HTMLElement = movie.querySelector('div.filter-result__time-wrap')
+    movie = await this.moviesService.getMovieByTitle(title)
+
+    if (!movie) {
+      const createdMovie: Movie = await this.moviesService.createMovie(title)
+      if (!createdMovie) return
+      movie = createdMovie
+    } else {
+      movie = movie
+    }
+
+    const showtimesWrapper: HTMLElement = movieElement.querySelector('div.filter-result__time-wrap')
 
     const times: HTMLElement[] = showtimesWrapper.querySelectorAll('a.filter-result__time')
     const formats: HTMLElement[] = showtimesWrapper.querySelectorAll(
@@ -37,10 +55,10 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
 
       const processedShowtime: CreateShowtimeDto = {
         internal_showtime_id: internalShowtimeId,
-        movie: movieName,
         date: combinedDate,
         format: combinedFormats,
-        order_link: orderLink
+        order_link: orderLink,
+        movie
       }
 
       await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
@@ -52,8 +70,8 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
 
     const movies = root.querySelectorAll('div.filter-result__item')
 
-    await Promise.all(movies.map(async (movie) => {
-      await this.processMovie(movie, cinemaId, date)
-    }))
+    for (let i = 0; i < movies.length; i++) {
+      await this.processMovie(movies[i], cinemaId, date)
+    }
   }
 }
