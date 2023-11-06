@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { DataSourceCinemasService } from '../../../interfaces/data-sources'
 import { CinemasService } from '../../../cinemas/cinemas.service'
 import { CreateCinemaDto } from '../../../cinemas/dtos'
+import { DataSourceCinemasService } from '../../interfaces'
 import { cinemas as cinemasList } from '../data/cinemas'
 import { CinemaData } from '../interfaces'
 

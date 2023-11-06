@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Movie } from '@prisma/client'
 import { AxiosService } from '../axios/axios.service'
+import { TMDB_URL_PROPERTY_PATH, TMDB_KEY_PROPERTY_PATH } from '../config/constants'
 import { MoviesRepository } from './movies.repository'
 import { CreateMovieDto } from './dtos'
 
@@ -13,8 +14,8 @@ export class MoviesService {
     private readonly axiosService: AxiosService
   ) { }
 
-  private readonly TMDB_API_URL = this.configService.get('tmdbApi.url', { infer: true })
-  private readonly TMDB_API_KEY = this.configService.get('tmdbApi.key', { infer: true })
+  private readonly TMDB_API_URL = this.configService.get(TMDB_URL_PROPERTY_PATH, { infer: true })
+  private readonly TMDB_API_KEY = this.configService.get(TMDB_KEY_PROPERTY_PATH, { infer: true })
 
   async getMovieByTitle(title: string): Promise<Movie> {
     return this.moviesRepository.getMovie({ where: { title } })

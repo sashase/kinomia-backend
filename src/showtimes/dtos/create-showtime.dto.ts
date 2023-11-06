@@ -1,4 +1,4 @@
-import { Movie } from "@prisma/client"
+import { Movie } from '@prisma/client'
 
 export class CreateShowtimeDto {
   internal_showtime_id: number

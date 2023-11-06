@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { Movie } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
-import { DataSourceShowtimesService } from '../../../interfaces/data-sources'
+import { OSKAR_NETWORK_NAME } from '../../../networks/constants'
 import { ShowtimesService } from '../../../showtimes/showtimes.service'
 import { CreateShowtimeDto } from '../../../showtimes/dtos'
 import { MoviesService } from '../../../movies/movies.service'
 import { ScraperService } from '../../scraper.service'
+import { DataSourceShowtimesService } from '../../interfaces'
 import { combineDateWithTime, combineFormatElements } from '../utils'
 
 @Injectable()
@@ -16,7 +17,7 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
     private readonly moviesService: MoviesService
   ) { }
 
-  private readonly networkName: string = 'oskar'
+  private readonly networkName: string = OSKAR_NETWORK_NAME
 
   async processMovie(movieElement: HTMLElement, cinemaId: number, date: string): Promise<void> {
     let movie: Movie

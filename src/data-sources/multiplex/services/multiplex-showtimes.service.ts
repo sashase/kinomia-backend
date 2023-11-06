@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { Movie } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
-import { DataSourceShowtimesService } from '../../../interfaces/data-sources'
+import { MULTIPLEX_NETWORK_NAME } from '../../../networks/constants'
 import { ShowtimesService } from '../../../showtimes/showtimes.service'
 import { CreateShowtimeDto } from '../../../showtimes/dtos'
 import { MoviesService } from '../../../movies/movies.service'
 import { ScraperService } from '../../scraper.service'
+import { DataSourceShowtimesService } from '../../interfaces'
 import { combineDateWithTime, getOrderLink, filterShowtimes } from '../utils'
 
 @Injectable()
@@ -16,7 +17,7 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
     private readonly moviesService: MoviesService
   ) { }
 
-  private readonly networkName: string = 'multiplex'
+  private readonly networkName: string = MULTIPLEX_NETWORK_NAME
 
   async formatAndCreateShowtime(showtime: HTMLElement, dayTimestamp: string, cinemaId: number): Promise<void> {
     let movie: Movie

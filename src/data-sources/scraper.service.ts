@@ -1,6 +1,7 @@
 import { BadGatewayException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { HTMLElement, parse } from 'node-html-parser'
+import { MULTIPLEX_NETWORK_NAME, OSKAR_NETWORK_NAME } from '../networks/constants'
 
 @Injectable()
 export class ScraperService {
@@ -19,13 +20,13 @@ export class ScraperService {
 
   async getRoot(url: string, network: string, internalCinemaId?: string, dateStart?: string, dateEnd?: string): Promise<HTMLElement> {
     switch (network) {
-      case 'multiplex': {
+      case MULTIPLEX_NETWORK_NAME: {
         const config = { headers: { Cookie: `cinemaN=${internalCinemaId}` } }
         const html = await this.getHtml(url, config)
         return parse(html)
       }
 
-      case 'oskar': {
+      case OSKAR_NETWORK_NAME: {
         if (!dateStart) throw new InternalServerErrorException('dateStart is undefined | Oskar | Scraper service')
 
         const requestUrl: string = `${url}/${internalCinemaId}/sessions/ajax?date_select=${dateStart}`

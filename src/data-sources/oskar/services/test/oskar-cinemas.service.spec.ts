@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { OSKAR_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasService } from '../../../../cinemas/cinemas.service'
 import { processedCinemaStub } from '../../../../cinemas/test/stubs'
@@ -33,7 +34,7 @@ describe('OskarCinemasService', () => {
     it('should call all necessary methods to update cinemas', async () => {
       service.processCinema = jest.fn()
 
-      await service.updateCinemas(networkStub().id)
+      await service.updateCinemas(networkStub(OSKAR_NETWORK_NAME).id)
 
       expect(service.processCinema).toBeCalledTimes(service['cinemas'].length)
     })
@@ -42,7 +43,7 @@ describe('OskarCinemasService', () => {
   describe('processCinema', () => {
     it('should create createCinemaDto and call cinemasService', async () => {
       jest.spyOn(cinemasService, 'validateAndCreateCinema').mockResolvedValue()
-      const network = networkStub()
+      const network = networkStub(OSKAR_NETWORK_NAME)
 
       await service.processCinema(cinemaDataStub(), network.id)
 

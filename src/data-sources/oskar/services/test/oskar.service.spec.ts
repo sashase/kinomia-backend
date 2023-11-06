@@ -4,6 +4,7 @@ import { InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigService } from '@nestjs/config'
 import { NetworksService } from '../../../../networks/networks.service'
+import { OSKAR_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
 import { cinemasStub } from '../../../../cinemas/test/stubs'
@@ -43,7 +44,7 @@ describe('OskarService', () => {
     oskarCinemasService = module.get<OskarCinemasService>(OskarCinemasService)
     oskarShowtimesService = module.get<OskarShowtimesService>(OskarShowtimesService)
 
-    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub().id)
+    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(OSKAR_NETWORK_NAME).id)
     jest.spyOn(configService, 'get').mockReturnValue(urlStub())
   })
 
@@ -62,7 +63,7 @@ describe('OskarService', () => {
 
       const result = await service.updateData()
 
-      expect(oskarCinemasService.updateCinemas).toBeCalledWith(networkStub().id)
+      expect(oskarCinemasService.updateCinemas).toBeCalledWith(networkStub(OSKAR_NETWORK_NAME).id)
       expect(cinemasRepository.getCinemas).toBeCalled()
       expect(oskarShowtimesService.updateShowtimes).toBeCalledTimes(numberOfShowtimesServiceCalls)
 
