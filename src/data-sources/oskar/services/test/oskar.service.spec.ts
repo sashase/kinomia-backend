@@ -2,16 +2,20 @@ const getDatesMock = jest.fn()
 
 import { InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
-import { ConfigService } from '@nestjs/config'
+import { ConfigGetOptions, ConfigService } from '@nestjs/config'
+import { OSKAR_URL_PROPERTY_PATH } from '../../../../config/constants'
 import { NetworksService } from '../../../../networks/networks.service'
 import { OSKAR_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
 import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { sourceServiceResponseStub } from '../../../test/stubs'
+import { SourceServiceResponse } from '../../../interfaces'
+import { CINEMAS_NOT_FOUND, DATES_ARRAY_CANNOT_BE_GENERATED } from '../../../constants'
 import { OskarService } from '../oskar.service'
 import { OskarCinemasService } from '../oskar-cinemas.service'
 import { OskarShowtimesService } from '../oskar-showtimes.service'
-import { datesStub, resultStub, urlStub } from './stubs'
+import { datesStub, urlStub } from './stubs'
 
 jest.mock('../../utils', () => ({
   getDates: getDatesMock
@@ -44,8 +48,7 @@ describe('OskarService', () => {
     oskarCinemasService = module.get<OskarCinemasService>(OskarCinemasService)
     oskarShowtimesService = module.get<OskarShowtimesService>(OskarShowtimesService)
 
-    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(OSKAR_NETWORK_NAME).id)
-    jest.spyOn(configService, 'get').mockReturnValue(urlStub())
+    jest.clearAllMocks()
   })
 
   it('should be defined', () => {
@@ -53,34 +56,57 @@ describe('OskarService', () => {
   })
 
   describe('updateData', () => {
-    it('should call all necessary methods to update data successfully', async () => {
-      jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
-      getDatesMock.mockReturnValue(datesStub())
+    describe('when updateData is called', () => {
+      let response: SourceServiceResponse
+      const networkName: string = OSKAR_NETWORK_NAME
 
-      const numberOfCinemas: number = cinemasStub().length
-      const numberOfDates: number = datesStub().length
-      const numberOfShowtimesServiceCalls: number = numberOfCinemas * numberOfDates
+      beforeEach(async () => {
+        jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(networkName).id)
+        jest.spyOn(configService, 'get').mockReturnValue(urlStub())
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
+        getDatesMock.mockReturnValue(datesStub())
 
-      const result = await service.updateData()
+        response = await service.updateData()
+      })
 
-      expect(oskarCinemasService.updateCinemas).toBeCalledWith(networkStub(OSKAR_NETWORK_NAME).id)
-      expect(cinemasRepository.getCinemas).toBeCalled()
-      expect(oskarShowtimesService.updateShowtimes).toBeCalledTimes(numberOfShowtimesServiceCalls)
+      test('then it should call networksService.getNetworkIdByName', () => {
+        expect(networksService.getNetworkIdByName).toBeCalledWith(networkName)
+      })
 
-      expect(result).toEqual(resultStub())
-    })
+      test('then it should call configService.get', () => {
+        const propertyPath: string = OSKAR_URL_PROPERTY_PATH
+        const params: ConfigGetOptions = { infer: true }
+        expect(configService.get).toBeCalledWith(propertyPath, params)
+      })
 
-    it('should throw an error if no cinema is found', async () => {
-      jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(null)
+      test('then it should call oskarCinemasService.updateCinemas', () => {
+        expect(oskarCinemasService.updateCinemas).toBeCalledWith(networkStub(networkName).id)
+      })
 
-      await expect(service.updateData()).rejects.toThrowError(NotFoundException)
-    })
+      test('then it should throw NotFoundException if no cinema is found', async () => {
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(null)
+        await expect(service.updateData()).rejects.toThrowError(new NotFoundException(CINEMAS_NOT_FOUND))
+      })
 
-    it('should throw an error if no date can be generated', async () => {
-      jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
-      getDatesMock.mockReturnValue(null)
+      test('then it should call getDates', () => {
+        expect(getDatesMock).toBeCalled()
+      })
 
-      await expect(service.updateData()).rejects.toThrowError(InternalServerErrorException)
+      test('then it should throw InternalServerErrorException if no date can be generated', async () => {
+        getDatesMock.mockReturnValue(null)
+        await expect(service.updateData()).rejects.toThrowError(new InternalServerErrorException(DATES_ARRAY_CANNOT_BE_GENERATED))
+      })
+
+      test('then it should call oskarShowtimesService.updateShowtimes for each cinema and date', () => {
+        const numberOfCinemas: number = cinemasStub().length
+        const numberOfDates: number = datesStub().length
+        const totalNumberOfCalls: number = numberOfCinemas * numberOfDates
+        expect(oskarShowtimesService.updateShowtimes).toBeCalledTimes(totalNumberOfCalls)
+      })
+
+      test('then it should return success message', () => {
+        expect(response).toEqual(sourceServiceResponseStub(networkName))
+      })
     })
   })
 })

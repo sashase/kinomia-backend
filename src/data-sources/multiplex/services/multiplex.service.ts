@@ -7,6 +7,7 @@ import { NetworksService } from '../../../networks/networks.service'
 import { MULTIPLEX_NETWORK_NAME } from '../../../networks/constants'
 import { CinemasRepository } from '../../../cinemas/cinemas.repository'
 import { DataSourceService, SourceServiceResponse } from '../../interfaces'
+import { CINEMAS_NOT_FOUND } from '../../constants'
 import { MultiplexCinemasService } from '../services/multiplex-cinemas.service'
 import { MultiplexShowtimesService } from '../services/multiplex-showtimes.service'
 
@@ -29,7 +30,7 @@ export class MultiplexService implements DataSourceService {
 
     const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
 
-    if (!cinemas) throw new NotFoundException('Cinemas not found')
+    if (!cinemas) throw new NotFoundException(CINEMAS_NOT_FOUND)
 
     for (let i = 0; i < cinemas.length; i++) {
       await this.multiplexShowtimesService.updateShowtimes(url, cinemas[i].id, cinemas[i].internal_cinema_id)
