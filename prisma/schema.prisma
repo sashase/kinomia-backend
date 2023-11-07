@@ -23,7 +23,6 @@ model Showtime {
   format               String?
   price                Int?
   order_link           String?
-  imdb_link            String?
 
   cinema      Cinema @relation(fields: [cinema_id], references: [id])
   cinema_id   Int
