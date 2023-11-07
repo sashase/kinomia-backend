@@ -8,4 +8,8 @@ export interface Config {
     url: string
     key: string
   }
+  redis: {
+    url: string
+    ttl: number
+  }
 }

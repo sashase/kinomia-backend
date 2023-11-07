@@ -9,5 +9,9 @@ export default (): Config => ({
   tmdbApi: {
     url: 'https://api.themoviedb.org/3',
     key: process.env.TMDB_API_KEY
+  },
+  redis: {
+    url: process.env.REDIS_URL,
+    ttl: parseInt(process.env.REDIS_TTL)
   }
 })
