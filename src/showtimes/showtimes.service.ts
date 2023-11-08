@@ -11,7 +11,7 @@ export class ShowtimesService {
   constructor(
     private readonly showtimesRepository: ShowtimesRepository,
     private readonly cinemasRepository: CinemasRepository,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache
   ) { }
 
   async validateAndCreateShowtime(showtime: CreateShowtimeDto, cinemaId: number): Promise<void> {
@@ -42,25 +42,32 @@ export class ShowtimesService {
     const { id, format, price, cinema_id, movie_id, movie_title, date } = dto
     const redisKey: string = `showtimes?id=${id}&format=${format}&price=${price}&cinema_id=${cinema_id}&movie_id=${movie_id}&movie_title=${movie_title}&date=${date ? date.toDateString() : undefined}`
 
-    const showtimes: string = await this.cacheManager.get(redisKey)
+    const cachedShowtimes: string = await this.cacheManager.get(redisKey)
 
-    if (!showtimes) {
-      const showtimes = await this.showtimesRepository.getShowtimes({
-        where: {
-          id: id ?? undefined,
-          format: format ? { contains: format } : undefined,
-          price: price ?? undefined,
-          cinema_id: cinema_id ?? undefined,
-          movie_id: movie_id ?? undefined,
-          movie_title: movie_title ? { contains: movie_title } : undefined,
-          date: date ?? undefined
+    if (cachedShowtimes) {
+      const parsedShowtimes: Showtime[] = JSON.parse(cachedShowtimes, (key, value) => {
+        if (key === 'date' && typeof value === 'string') {
+          return new Date(value) // Deserialize date string to Date object
         }
+        return value
       })
-      if (!showtimes.length) throw new NotFoundException()
-      const redisValue = JSON.stringify(showtimes)
-      await this.cacheManager.set(redisKey, redisValue)
-      return showtimes
+      return parsedShowtimes
     }
-    return JSON.parse(showtimes)
+
+    const showtimes = await this.showtimesRepository.getShowtimes({
+      where: {
+        id: id ?? undefined,
+        format: format ? { contains: format } : undefined,
+        price: price ?? undefined,
+        cinema_id: cinema_id ?? undefined,
+        movie_id: movie_id ?? undefined,
+        movie_title: movie_title ? { contains: movie_title } : undefined,
+        date: date ?? undefined
+      }
+    })
+    if (!showtimes.length) throw new NotFoundException()
+    const redisValue = JSON.stringify(showtimes)
+    await this.cacheManager.set(redisKey, redisValue)
+    return showtimes
   }
 }
