@@ -8,8 +8,13 @@ datasource db {
 }
 
 model Movie {
-  id    Int
-  title String
+  id            Int
+  title         String
+  title_ua      String
+  overview      String
+  backdrop_path String
+  poster_path   String
+  rating        Float?
 
   showtimes Showtime[]
 

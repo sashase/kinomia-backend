@@ -32,7 +32,7 @@ describe('MultiplexShowtimesService', () => {
         MultiplexShowtimesService,
         { provide: ScraperService, useValue: { getRoot: jest.fn() } },
         { provide: ShowtimesService, useValue: { validateAndCreateShowtime: jest.fn() } },
-        { provide: MoviesService, useValue: { getMovieByTitle: jest.fn(), createMovie: jest.fn() } },
+        { provide: MoviesService, useValue: { getMovieByUkrainianTitle: jest.fn(), createMovie: jest.fn() } },
       ],
     }).compile()
 
@@ -95,26 +95,26 @@ describe('MultiplexShowtimesService', () => {
     combineDateWithTimeMock.mockReturnValue(new Date(2023, 11, 30, 12, 0, 0))
     getOrderLinkMock.mockReturnValue('https://new.multiplex.ua/order/cinema/0000000017/session/224146')
 
-    it('should call getMovieByTitle', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+    it('should call getMovieByUkrainianTitle', async () => {
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
 
       await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
 
-      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.getMovieByUkrainianTitle).toBeCalled()
     })
 
-    it('should call createMovie if getMovieByTitle returned null', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(null)
+    it('should call createMovie if getMovieByUkrainianTitle returned null', async () => {
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(null)
       jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
 
       await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
 
-      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.getMovieByUkrainianTitle).toBeCalled()
       expect(moviesService.createMovie).toBeCalled()
     })
 
     it('should correctly process showtime without format', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
       jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
 
       await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
@@ -123,7 +123,7 @@ describe('MultiplexShowtimesService', () => {
     })
 
     it('should correctly process LUX format showtime', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
       jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
 
       await service.formatAndCreateShowtime(filteredShowtimesStub('LUX')[0], timestampStub(), cinemaId)

@@ -23,14 +23,12 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
 
     const title: string = showtime.attributes['data-name']
 
-    movie = await this.moviesService.getMovieByTitle(title)
+    movie = await this.moviesService.getMovieByUkrainianTitle(title)
 
     if (!movie) {
       const createdMovie: Movie = await this.moviesService.createMovie(title)
       if (!createdMovie) return
       movie = createdMovie
-    } else {
-      movie = movie
     }
 
     const id: string = showtime.attributes['data-id']

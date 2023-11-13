@@ -30,7 +30,7 @@ describe('OskarShowtimesService', () => {
         OskarShowtimesService,
         { provide: ScraperService, useValue: { getRoot: jest.fn() } },
         { provide: ShowtimesService, useValue: { validateAndCreateShowtime: jest.fn() } },
-        { provide: MoviesService, useValue: { getMovieByTitle: jest.fn(), createMovie: jest.fn() } },
+        { provide: MoviesService, useValue: { getMovieByUkrainianTitle: jest.fn(), createMovie: jest.fn() } },
       ],
     }).compile()
 
@@ -80,26 +80,26 @@ describe('OskarShowtimesService', () => {
       jest.clearAllMocks()
     })
 
-    it('should call getMovieByTitle', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+    it('should call getMovieByUkrainianTitle', async () => {
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
 
       await service.processMovie(movie, cinema.id, date)
 
-      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.getMovieByUkrainianTitle).toBeCalled()
     })
 
-    it('should call createMovie if getMovieByTitle returned null', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(null)
+    it('should call createMovie if getMovieByUkrainianTitle returned null', async () => {
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(null)
       jest.spyOn(moviesService, 'createMovie').mockResolvedValue(movieStub())
 
       await service.processMovie(movie, cinema.id, date)
 
-      expect(moviesService.getMovieByTitle).toBeCalled()
+      expect(moviesService.getMovieByUkrainianTitle).toBeCalled()
       expect(moviesService.createMovie).toBeCalled()
     })
 
     it('should call all helpers methods for each showtime & skipping showtimes without time element', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
 
       await service.processMovie(movie, cinema.id, date)
 
@@ -108,7 +108,7 @@ describe('OskarShowtimesService', () => {
     })
 
     it('should call showtimesService for each showtime to create a showtime', async () => {
-      jest.spyOn(moviesService, 'getMovieByTitle').mockResolvedValue(movieStub())
+      jest.spyOn(moviesService, 'getMovieByUkrainianTitle').mockResolvedValue(movieStub())
 
       await service.processMovie(movie, cinema.id, date)
 

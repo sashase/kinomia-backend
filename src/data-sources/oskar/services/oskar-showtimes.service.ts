@@ -25,14 +25,12 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
       .querySelector('div.filter-result__name')
       .querySelector('a').text
 
-    movie = await this.moviesService.getMovieByTitle(title)
+    movie = await this.moviesService.getMovieByUkrainianTitle(title)
 
     if (!movie) {
       const createdMovie: Movie = await this.moviesService.createMovie(title)
       if (!createdMovie) return
       movie = createdMovie
-    } else {
-      movie = movie
     }
 
     const showtimesWrapper: HTMLElement = movieElement.querySelector('div.filter-result__time-wrap')

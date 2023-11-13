@@ -148,8 +148,8 @@ describe('ShowtimesService', () => {
         expect(cacheManager.get).toBeCalledWith(redisKey)
       })
 
-
       test('then it should return showtimes', () => {
+        expect(showtimesRepository.getShowtimes).not.toBeCalled()
         expect(showtimes).toEqual(showtimesStub())
       })
 
