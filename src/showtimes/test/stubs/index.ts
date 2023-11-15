@@ -1,1 +1,2 @@
-export * from './showtimes.stub'
+export * from './showtime.stub'
+export * from './showtime-cached.stub'

@@ -3,7 +3,7 @@ import { Showtime } from '@prisma/client'
 import { ShowtimesController } from '../showtimes.controller'
 import { ShowtimesService } from '../showtimes.service'
 import { GetShowtimesDto } from '../dtos'
-import { showtimesStub } from './stubs'
+import { showtimeStub } from './stubs'
 
 describe('ShowtimesController', () => {
   let controller: ShowtimesController
@@ -34,7 +34,7 @@ describe('ShowtimesController', () => {
       let showtimes: Showtime[]
 
       beforeEach(async () => {
-        jest.spyOn(showtimesService, 'getShowtimes').mockResolvedValue(showtimesStub())
+        jest.spyOn(showtimesService, 'getShowtimes').mockResolvedValue([showtimeStub()])
 
         showtimes = await controller.getShowtimes(dto)
       })
@@ -44,7 +44,7 @@ describe('ShowtimesController', () => {
       })
 
       test('then it should return showtimes', () => {
-        expect(showtimes).toEqual(showtimesStub())
+        expect(showtimes).toEqual([showtimeStub()])
       })
     })
   })

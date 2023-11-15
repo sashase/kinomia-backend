@@ -8,7 +8,7 @@ import { movieStub } from '../../movies/test/stubs'
 import { ShowtimesService } from '../showtimes.service'
 import { ShowtimesRepository } from '../showtimes.repository'
 import { CreateShowtimeDto, GetShowtimesDto } from '../dtos'
-import { showtimesStub } from './stubs'
+import { showtimeCachedStub, showtimeStub } from './stubs'
 
 describe('ShowtimesService', () => {
   let service: ShowtimesService
@@ -73,7 +73,7 @@ describe('ShowtimesService', () => {
 
       beforeEach(async () => {
         jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(null)
-        jest.spyOn(showtimesRepository, 'createShowtime').mockResolvedValue(showtimesStub()[0])
+        jest.spyOn(showtimesRepository, 'createShowtime').mockResolvedValue(showtimeStub())
         jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemasStub()[0])
 
         await service.validateAndCreateShowtime(dto, cinemaId)
@@ -103,7 +103,7 @@ describe('ShowtimesService', () => {
 
       test('then it should return if showtime already exists', () => {
         jest.clearAllMocks()
-        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(showtimesStub()[0])
+        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(showtimeStub())
 
         expect(showtimesRepository.createShowtime).not.toBeCalled()
       })
@@ -138,8 +138,8 @@ describe('ShowtimesService', () => {
       let showtimes: Showtime[]
 
       beforeEach(async () => {
-        jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue(showtimesStub())
-        jest.spyOn(cacheManager, 'get').mockResolvedValue('[{"id":1764,"internal_showtime_id":73071,"date":"2023-11-09T12:00:00.000Z","format":"3D SDH","price":180,"order_link":"https://new.multiplex.ua/order/cinema/0000000005/session/73071","cinema_id":15,"movie_id":901362,"movie_title":"Тролі: Знову разом"}]')
+        jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue([showtimeStub()])
+        jest.spyOn(cacheManager, 'get').mockResolvedValue(`[${showtimeCachedStub()}]`)
 
         showtimes = await service.getShowtimes(dto)
       })
@@ -150,7 +150,7 @@ describe('ShowtimesService', () => {
 
       test('then it should return showtimes', () => {
         expect(showtimesRepository.getShowtimes).not.toBeCalled()
-        expect(showtimes).toEqual(showtimesStub())
+        expect(showtimes).toEqual([showtimeStub()])
       })
 
       // BUG: Jest does not detecting showtimesRepository.getShowtimes call, despite there is an actual call
