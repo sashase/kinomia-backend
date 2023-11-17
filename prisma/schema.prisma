@@ -42,8 +42,10 @@ model Cinema {
   id                 Int     @id @default(autoincrement())
   internal_cinema_id String
   name               String
-  city               String?
   address            String?
+
+  city    City @relation(fields: [city_id], references: [id])
+  city_id Int
 
   network    Network @relation(fields: [network_id], references: [id])
   network_id Int
@@ -51,6 +53,13 @@ model Cinema {
   showtimes Showtime[]
 
   @@unique([internal_cinema_id, network_id])
+}
+
+model City {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  cinemas Cinema[]
 }
 
 model Network {

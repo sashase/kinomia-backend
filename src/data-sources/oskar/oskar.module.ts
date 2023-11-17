@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { NetworksModule } from '../../networks/networks.module'
+import { CitiesModule } from '../../cities/cities.module'
 import { CinemasModule } from '../../cinemas/cinemas.module'
 import { ShowtimesModule } from '../../showtimes/showtimes.module'
 import { MoviesModule } from '../../movies/movies.module'
@@ -9,7 +10,7 @@ import { OskarCinemasService } from './services/oskar-cinemas.service'
 import { OskarShowtimesService } from './services/oskar-showtimes.service'
 
 @Module({
-  imports: [NetworksModule, CinemasModule, ShowtimesModule, DataSourceModule, MoviesModule],
+  imports: [NetworksModule, CinemasModule, ShowtimesModule, DataSourceModule, MoviesModule, CitiesModule],
   providers: [OskarService, OskarCinemasService, OskarShowtimesService],
   exports: [OskarService]
 })
