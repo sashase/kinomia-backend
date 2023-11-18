@@ -4,6 +4,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Movie } from '@prisma/client'
 import { Cache } from 'cache-manager'
 import { AxiosService } from '../axios/axios.service'
+import { TMDB_URL_PROPERTY_PATH, TMDB_KEY_PROPERTY_PATH } from '../config/constants'
 import { MoviesRepository } from './movies.repository'
 import { CreateMovieDto } from './dtos'
 import { TmdbMovie } from './interfaces'
@@ -17,8 +18,8 @@ export class MoviesService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache
   ) { }
 
-  private readonly TMDB_API_URL = this.configService.get('tmdbApi.url', { infer: true })
-  private readonly TMDB_API_KEY = this.configService.get('tmdbApi.key', { infer: true })
+  private readonly TMDB_API_URL = this.configService.get(TMDB_URL_PROPERTY_PATH, { infer: true })
+  private readonly TMDB_API_KEY = this.configService.get(TMDB_KEY_PROPERTY_PATH, { infer: true })
 
   async getMovies(): Promise<Movie[]> {
     const redisKey: string = `movies`

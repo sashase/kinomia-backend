@@ -1,14 +1,19 @@
 import { NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
-import { ConfigService } from '@nestjs/config'
+import { ConfigGetOptions, ConfigService } from '@nestjs/config'
+import { MULTIPLEX_URL_PROPERTY_PATH } from '../../../../config/constants'
+import { sourceServiceResponseStub } from '../../../../data-sources/test/stubs'
 import { NetworksService } from '../../../../networks/networks.service'
+import { MULTIPLEX_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
 import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { SourceServiceResponse } from '../../../interfaces'
+import { CINEMAS_NOT_FOUND } from '../../../constants'
 import { MultiplexService } from '../../services/multiplex.service'
 import { MultiplexCinemasService } from '../../services/multiplex-cinemas.service'
 import { MultiplexShowtimesService } from '../../services/multiplex-showtimes.service'
-import { resultStub, urlStub } from './stubs'
+import { urlStub } from './stubs'
 
 describe('MultiplexService', () => {
   let service: MultiplexService
@@ -37,8 +42,7 @@ describe('MultiplexService', () => {
     multiplexCinemasService = module.get<MultiplexCinemasService>(MultiplexCinemasService)
     multiplexShowtimesService = module.get<MultiplexShowtimesService>(MultiplexShowtimesService)
 
-    jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub().id)
-    jest.spyOn(configService, 'get').mockReturnValue(urlStub())
+    jest.clearAllMocks()
   })
 
   it('should be defined', () => {
@@ -46,24 +50,45 @@ describe('MultiplexService', () => {
   })
 
   describe('updateData', () => {
-    it('should call all necessary methods to update data successfully', async () => {
-      jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
+    describe('when updateData is called', () => {
+      let response: SourceServiceResponse
+      const networkName: string = MULTIPLEX_NETWORK_NAME
 
-      const numberOfCinemas = cinemasStub().length
+      beforeEach(async () => {
+        jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(networkName).id)
+        jest.spyOn(configService, 'get').mockReturnValue(urlStub())
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
 
-      const result = await service.updateData()
+        response = await service.updateData()
+      })
 
-      expect(multiplexCinemasService.updateCinemas).toBeCalledWith(urlStub(), networkStub().id)
-      expect(cinemasRepository.getCinemas).toBeCalled()
-      expect(multiplexShowtimesService.updateShowtimes).toBeCalledTimes(numberOfCinemas)
+      test('then it should call networksService.getNetworkIdByName', () => {
+        expect(networksService.getNetworkIdByName).toBeCalledWith(networkName)
+      })
 
-      expect(result).toEqual(resultStub())
-    })
+      test('then it should call configService.get', () => {
+        const propertyPath: string = MULTIPLEX_URL_PROPERTY_PATH
+        const params: ConfigGetOptions = { infer: true }
+        expect(configService.get).toBeCalledWith(propertyPath, params)
+      })
 
-    it('should throw an error if no cinema is found', async () => {
-      jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(null)
+      test('then it should call multiplexCinemasService.updateCinemas', () => {
+        expect(multiplexCinemasService.updateCinemas).toBeCalledWith(urlStub(), networkStub(networkName).id)
+      })
 
-      await expect(service.updateData()).rejects.toThrowError(NotFoundException)
+      test('then it should throw NotFoundException if no cinema is found', async () => {
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(null)
+        await expect(service.updateData()).rejects.toThrowError(new NotFoundException(CINEMAS_NOT_FOUND))
+      })
+
+      test('then it should call multiplexShowtimesService.updateShowtimes for each cinema', () => {
+        const numberOfCinemas: number = cinemasStub().length
+        expect(multiplexShowtimesService.updateShowtimes).toBeCalledTimes(numberOfCinemas)
+      })
+
+      test('then it should return success message', () => {
+        expect(response).toEqual(sourceServiceResponseStub(networkName))
+      })
     })
   })
 })

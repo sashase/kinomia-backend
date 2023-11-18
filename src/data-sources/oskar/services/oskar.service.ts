@@ -2,9 +2,12 @@ import { Injectable, InternalServerErrorException, NotFoundException } from '@ne
 import { ConfigService } from '@nestjs/config'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Cinema } from '@prisma/client'
-import { DataSourceService } from '../../../interfaces/data-sources'
+import { OSKAR_URL_PROPERTY_PATH } from '../../../config/constants'
 import { NetworksService } from '../../../networks/networks.service'
+import { OSKAR_NETWORK_NAME } from '../../../networks/constants'
 import { CinemasRepository } from '../../../cinemas/cinemas.repository'
+import { DataSourceService, SourceServiceResponse } from '../../interfaces'
+import { CINEMAS_NOT_FOUND, DATES_ARRAY_CANNOT_BE_GENERATED } from '../../constants'
 import { OskarCinemasService } from './oskar-cinemas.service'
 import { OskarShowtimesService } from './oskar-showtimes.service'
 import { getDates } from '../utils'
@@ -18,23 +21,23 @@ export class OskarService implements DataSourceService {
     private readonly oskarShowtimesService: OskarShowtimesService,
   ) { }
 
-  private readonly networkName: string = 'oskar'
+  private readonly networkName: string = OSKAR_NETWORK_NAME
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async updateData(): Promise<{ message: string, code: number }> {
+  async updateData(): Promise<SourceServiceResponse> {
     const networkId: number = await this.networksService.getNetworkIdByName(this.networkName)
-    const url: string = this.configService.get('dataSources.oskarUrl', { infer: true })
+    const url: string = this.configService.get(OSKAR_URL_PROPERTY_PATH, { infer: true })
 
     await this.oskarCinemasService.updateCinemas(networkId)
 
     const cinemas: Cinema[] = await this.cinemasRepository.getCinemas({ where: { network_id: networkId } })
 
-    if (!cinemas) throw new NotFoundException('Cinemas not found')
+    if (!cinemas) throw new NotFoundException(CINEMAS_NOT_FOUND)
 
     // Array of dates in format 'yyyy-mm-dd' until next Wednesday
     const dates: string[] = getDates()
 
-    if (!dates || !dates.length) throw new InternalServerErrorException('Dates array cannot be generated')
+    if (!dates || !dates.length) throw new InternalServerErrorException(DATES_ARRAY_CANNOT_BE_GENERATED)
 
     for (let i = 0; i < cinemas.length; i++) {
       for (let j = 0; j < dates.length; j++) {

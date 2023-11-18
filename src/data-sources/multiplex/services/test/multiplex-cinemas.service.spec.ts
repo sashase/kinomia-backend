@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { Network } from '@prisma/client'
+import { MULTIPLEX_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasService } from '../../../../cinemas/cinemas.service'
 import { processedCinemaStub } from '../../../../cinemas/test/stubs'
@@ -34,7 +35,7 @@ describe('MultiplexCinemasService', () => {
 
   describe('updateCinemas', () => {
     const url: string = urlStub()
-    const network: Network = networkStub()
+    const network: Network = networkStub(MULTIPLEX_NETWORK_NAME)
 
     it('should call all necessary methods to update cinemas', async () => {
       service.processCity = jest.fn()
@@ -58,7 +59,7 @@ describe('MultiplexCinemasService', () => {
   describe('processCity', () => {
     it('should call cinemasService for each cinema', async () => {
       jest.spyOn(cinemasService, 'validateAndCreateCinema').mockResolvedValue()
-      const network = networkStub()
+      const network = networkStub(MULTIPLEX_NETWORK_NAME)
 
       const numberOfCinemas: number = cityStub().querySelectorAll('.cinema').length
 

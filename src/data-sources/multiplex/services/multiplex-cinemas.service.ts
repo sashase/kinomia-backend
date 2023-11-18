@@ -1,15 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { HTMLElement } from 'node-html-parser'
-import { DataSourceCinemasService } from '../../../interfaces/data-sources'
+import { MULTIPLEX_NETWORK_NAME } from '../../../networks/constants'
 import { CinemasService } from '../../../cinemas/cinemas.service'
 import { CreateCinemaDto } from '../../../cinemas/dtos'
 import { ScraperService } from '../../scraper.service'
+import { DataSourceCinemasService } from '../../interfaces'
 
 @Injectable()
 export class MultiplexCinemasService implements DataSourceCinemasService {
   constructor(private readonly scraperService: ScraperService, private readonly cinemasService: CinemasService) { }
 
-  private readonly networkName: string = 'multiplex'
+  private readonly networkName: string = MULTIPLEX_NETWORK_NAME
 
   async processCity(city: HTMLElement, networkId: number): Promise<void> {
     const cityName = city.attributes['data-cityname']
