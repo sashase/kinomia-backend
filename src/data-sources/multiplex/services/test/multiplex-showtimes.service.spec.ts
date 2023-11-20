@@ -119,7 +119,7 @@ describe('MultiplexShowtimesService', () => {
 
       await service.formatAndCreateShowtime(filteredShowtimesStub()[0], timestampStub(), cinemaId)
 
-      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub(), cinemaId)
+      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub())
     })
 
     it('should correctly process LUX format showtime', async () => {
@@ -128,7 +128,7 @@ describe('MultiplexShowtimesService', () => {
 
       await service.formatAndCreateShowtime(filteredShowtimesStub('LUX')[0], timestampStub(), cinemaId)
 
-      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub('LUX'), cinemaId)
+      expect(showtimesService.validateAndCreateShowtime).toBeCalledWith(formattedShowtimeStub('LUX'))
     })
   })
 })

@@ -46,6 +46,7 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
     const combinedDateWithTime: Date = combineDateWithTime(dayTimestamp, time)
 
     const processedShowtime: CreateShowtimeDto = {
+      cinemaId,
       internal_showtime_id: internalShowtimeId,
       date: combinedDateWithTime,
       format: format,
@@ -54,7 +55,7 @@ export class MultiplexShowtimesService implements DataSourceShowtimesService {
       movie
     }
 
-    await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
+    await this.showtimesService.validateAndCreateShowtime(processedShowtime)
   }
 
   async processMovie(movie: HTMLElement, cinemaId: number): Promise<void> {

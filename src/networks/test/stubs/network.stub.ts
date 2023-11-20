@@ -2,7 +2,7 @@ import { Network } from '@prisma/client'
 
 export const networkStub = (networkName): Network => {
   return {
-    id: 3,
+    id: 1,
     name: networkName
   }
 }

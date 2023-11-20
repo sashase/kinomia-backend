@@ -1,13 +1,17 @@
+import { NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Test, TestingModule } from '@nestjs/testing'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Movie, Prisma } from '@prisma/client'
 import { AxiosResponse } from 'axios'
 import { Cache } from 'cache-manager'
+import { REDIS_KEY_MOVIE, REDIS_KEY_MOVIES } from '../../common/constants'
 import { AxiosService } from '../../axios/axios.service'
 import { MoviesService } from '../movies.service'
 import { MoviesRepository } from '../movies.repository'
-import { movieCachedStub, movieStub } from './stubs'
+import { CreateMovieDto } from '../dtos'
+import { TmdbMovieSearchResult } from '../interfaces'
+import { movieCachedStub, movieStub, tmdbMovieSearchResultsStub } from './stubs'
 
 describe('MoviesService', () => {
   let service: MoviesService
@@ -68,130 +72,176 @@ describe('MoviesService', () => {
 
   describe('getMovies', () => {
     describe('when getMovies is called', () => {
-      const redisKey: string = 'movies'
+      const redisKey: string = REDIS_KEY_MOVIES
       let movies: Movie[]
 
-      beforeEach(async () => {
-        jest.spyOn(moviesRepository, 'getMovies').mockResolvedValue([movieStub()])
+      test('then it should call cacheManager.get and return cached movies', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(`[${movieCachedStub()}]`)
+
         movies = await service.getMovies()
-      })
 
-      test('then it should call cacheManager.get', () => {
         expect(cacheManager.get).toBeCalledWith(redisKey)
-      })
-
-
-      test('then it should return movies', () => {
         expect(moviesRepository.getMovies).not.toBeCalled()
         expect(movies).toEqual([movieStub()])
       })
 
-      //
-      test('then it should call moviesRepository.getMovies if no movie is found in redis', () => {
-        jest.clearAllMocks()
+      test('then it should cache and return movies from the moviesRepository if no movie is found in cache', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(moviesRepository, 'getMovies').mockResolvedValue([movieStub()])
 
-        expect(moviesRepository.getMovies).toBeCalled()
+        const redisValue = JSON.stringify([movieStub()])
+
+        movies = await service.getMovies()
+
+        expect(cacheManager.get).toBeCalledWith(redisKey)
+        expect(moviesRepository.getMovies).toBeCalledWith({})
+        expect(cacheManager.set).toBeCalledWith(redisKey, redisValue)
+        expect(movies).toEqual([movieStub()])
+      })
+
+      test('then it should throw a NotFoundException if no movie was returned from the moviesRepository', async () => {
+        jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(moviesRepository, 'getMovies').mockResolvedValue([])
+
+        await expect(service.getMovies()).rejects.toThrowError(NotFoundException)
       })
     })
   })
 
   describe('getMovieByUkrainianTitle', () => {
     describe('when getMovieByUkrainianTitle is called', () => {
-      const redisKey: string = 'movie?title_ua=title'
+      const title = 'П\'ять ночей у Фредді'
+      const redisKey: string = `${REDIS_KEY_MOVIE}?title_ua=${title}`
       let movie: Movie
 
-      beforeEach(async () => {
-        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(movieStub())
+      test('then it should call cacheManager.get and return cached movie', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(movieCachedStub())
-        movie = await service.getMovieByUkrainianTitle('title')
-      })
 
-      test('then it should call cacheManager.get', () => {
+        movie = await service.getMovieByUkrainianTitle(title)
+
         expect(cacheManager.get).toBeCalledWith(redisKey)
-      })
-
-
-      test('then it should return movies', () => {
         expect(moviesRepository.getMovie).not.toBeCalled()
         expect(movie).toEqual(movieStub())
       })
 
-      //
-      test('then it should call moviesRepository.getMovie if no movie is found in redis', () => {
-        jest.clearAllMocks()
+      test('then it should cache and return movie from the moviesRepository if no movie is found in cache', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(movieStub())
 
-        expect(moviesRepository.getMovies).toBeCalled()
+        const movieWhereInput: Prisma.MovieWhereInput = {
+          title_ua: title
+        }
+        const redisValue = JSON.stringify(movieStub())
+        const weekTtl = 1000 * 60 * 60 * 24 * 7
+
+        movie = await service.getMovieByUkrainianTitle(title)
+
+        expect(cacheManager.get).toBeCalledWith(redisKey)
+        expect(moviesRepository.getMovie).toBeCalledWith({ where: movieWhereInput })
+        expect(cacheManager.set).toBeCalledWith(redisKey, redisValue, weekTtl)
+        expect(movie).toEqual(movieStub())
+      })
+
+      test('then it should return null if no movie was returned from the moviesRepository', async () => {
+        jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(null)
+
+        movie = await service.getMovieByUkrainianTitle(title)
+
+        expect(movie).toEqual(null)
       })
     })
   })
 
   describe('createMovie', () => {
     describe('when createMovie is called', () => {
-      const url: string = `https://api.themoviedb.org/3/search/movie?query=title_ua&api_key=b212eaf11bas2217e2saedcbb9a0`
+      const title = 'П\'ять ночей у Фредді'
+      const url: string = `https://api.themoviedb.org/3/search/movie?query=${title}&api_key=b212eaf11bas2217e2saedcbb9a0`
+      let movieSearchResults: TmdbMovieSearchResult[]
 
       let movie: Movie
 
-      beforeEach(async () => {
-        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(movieStub())
+      beforeEach(() => {
+        movieSearchResults = tmdbMovieSearchResultsStub()
+      })
+
+      test('then it should call tmdbAPI and create a movie record if API returned a valid movie', async () => {
         jest.spyOn(axiosService, 'get').mockResolvedValue({
           data: {
-            results: [{
-              id: 1,
-              title: 'title',
-              overview: 'overview',
-              backdrop_path: '/backdrop.jpg',
-              poster_path: '/poster.jpg',
-              vote_average: 8
-            }]
+            results: movieSearchResults
           }
         } as AxiosResponse)
-        jest.spyOn(cacheManager, 'get').mockResolvedValue(movieCachedStub())
+        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(null)
+        jest.spyOn(moviesRepository, 'createMovie').mockResolvedValue(movieStub())
 
-        movie = await service.createMovie('title_ua')
-      })
+        const newestMovie = movieSearchResults[0]
 
-      test('then it should call axiosService.get', () => {
+        const dto: CreateMovieDto = {
+          id: newestMovie.id,
+          title: newestMovie.title,
+          title_ua: title,
+          overview: newestMovie.overview,
+          backdrop_path: newestMovie.backdrop_path,
+          poster_path: newestMovie.poster_path,
+          rating: newestMovie.vote_average
+        }
+
+        movie = await service.createMovie(title)
+
         expect(axiosService.get).toBeCalledWith(url)
+        expect(moviesRepository.createMovie).toBeCalledWith({ data: dto })
+        expect(movie).toEqual(movieStub())
       })
 
-      test('then it should return if no movie is found', () => {
-        jest.clearAllMocks()
+      test('then it should return null if no result is received from the API', async () => {
         jest.spyOn(axiosService, 'get').mockResolvedValue({
           data: {
             results: []
           }
         } as AxiosResponse)
 
-        expect(moviesRepository.getMovie).not.toBeCalled()
-      })
+        movie = await service.createMovie(title)
 
-      test('then it should call moviesRepository.getMovie to make sure that movie does not exist', () => {
-        const movieWhereInput: Prisma.MovieWhereInput = { OR: [{ id: 1 }, { title: 'title_ua' }] }
-
-        expect(moviesRepository.getMovie).toBeCalledWith({ where: movieWhereInput })
-      })
-
-      test('then it should return movie if found', () => {
+        expect(axiosService.get).toBeCalledWith(url)
         expect(moviesRepository.createMovie).not.toBeCalled()
+        expect(movie).toEqual(null)
       })
 
-      //
-      test('then it should create movie if movie is not found', () => {
-        const dto = {
-          id: 1,
-          title: 'title',
-          title_ua: 'title_ua',
-          overview: 'overview',
-          backdrop_path: '/backdrop.jpg',
-          poster_path: '/poster.jpg',
-          rating: 8
-        }
-        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(null)
+      describe('then it should return null if movie received from the API is invalid', () => {
+        const cases = ['id', 'overview', 'backdrop_path', 'poster_path']
+        test.each(cases)(
+          'if %p is null', async (property) => {
+            delete movieSearchResults[0][property]
 
-        expect(moviesRepository.createMovie).toBeCalledWith({ data: dto })
+            jest.spyOn(axiosService, 'get').mockResolvedValue({
+              data: {
+                results: movieSearchResults
+              }
+            } as AxiosResponse)
+
+            movie = await service.createMovie(title)
+
+            expect(axiosService.get).toBeCalledWith(url)
+            expect(moviesRepository.createMovie).not.toBeCalled()
+            expect(movie).toEqual(null)
+          }
+        )
+      })
+
+      test('then it should return a movie if one exists with the same id', async () => {
+        jest.spyOn(axiosService, 'get').mockResolvedValue({
+          data: {
+            results: movieSearchResults
+          }
+        } as AxiosResponse)
+
+        jest.spyOn(moviesRepository, 'getMovie').mockResolvedValue(movieStub())
+
+        movie = await service.createMovie(title)
+
+        expect(axiosService.get).toBeCalledWith(url)
+        expect(moviesRepository.createMovie).not.toBeCalled()
+        expect(movie).toEqual(movieStub())
       })
     })
   })

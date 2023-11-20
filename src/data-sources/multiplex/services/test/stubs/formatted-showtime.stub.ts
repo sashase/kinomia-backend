@@ -5,6 +5,7 @@ export const formattedShowtimeStub = (format?: string): CreateShowtimeDto => {
   switch (format) {
     case 'LUX':
       return {
+        cinemaId: 123,
         internal_showtime_id: 224146,
         date: new Date(2023, 11, 30, 12, 0, 0),
         format: 'LUX',
@@ -15,6 +16,7 @@ export const formattedShowtimeStub = (format?: string): CreateShowtimeDto => {
 
     default:
       return {
+        cinemaId: 123,
         internal_showtime_id: 224146,
         date: new Date(2023, 11, 30, 12, 0, 0),
         format: '',

@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { City } from '@prisma/client'
 import { Cache } from 'cache-manager'
+import { REDIS_KEY_CITIES } from '../common/constants'
 import { CitiesRepository } from './cities.repository'
 
 @Injectable()
@@ -9,7 +10,7 @@ export class CitiesService {
   constructor(private readonly citiesRepository: CitiesRepository, @Inject(CACHE_MANAGER) private readonly cacheManager: Cache) { }
 
   async getCities(): Promise<City[]> {
-    const redisKey: string = `cities`
+    const redisKey: string = REDIS_KEY_CITIES
 
     const cachedCities: string = await this.cacheManager.get(redisKey)
 

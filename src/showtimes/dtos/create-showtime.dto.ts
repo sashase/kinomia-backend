@@ -1,6 +1,7 @@
 import { Movie } from '@prisma/client'
 
 export class CreateShowtimeDto {
+  cinemaId: number
   internal_showtime_id: number
   date: Date
   format?: string

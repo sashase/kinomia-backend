@@ -1,3 +1,3 @@
 export const cityCachedStub = (): string => {
-  return '{"id": 507089, "name": "Київ"}'
+  return '{"id": 1, "name": "Київ"}'
 }

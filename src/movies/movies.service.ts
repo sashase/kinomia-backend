@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Movie } from '@prisma/client'
 import { Cache } from 'cache-manager'
+import { REDIS_KEY_MOVIE, REDIS_KEY_MOVIES } from '../common/constants'
 import { AxiosService } from '../axios/axios.service'
 import { TMDB_URL_PROPERTY_PATH, TMDB_KEY_PROPERTY_PATH } from '../config/constants'
 import { MoviesRepository } from './movies.repository'
@@ -22,7 +23,7 @@ export class MoviesService {
   private readonly TMDB_API_KEY = this.configService.get(TMDB_KEY_PROPERTY_PATH, { infer: true })
 
   async getMovies(): Promise<Movie[]> {
-    const redisKey: string = `movies`
+    const redisKey: string = REDIS_KEY_MOVIES
 
     const cachedMovies: string = await this.cacheManager.get(redisKey)
 
@@ -39,7 +40,7 @@ export class MoviesService {
   }
 
   async getMovieByUkrainianTitle(title_ua: string): Promise<Movie> {
-    const redisKey: string = `movie?title_ua=${title_ua}`
+    const redisKey: string = `${REDIS_KEY_MOVIE}?title_ua=${title_ua}`
 
     const cachedMovie: string = await this.cacheManager.get(redisKey)
 
@@ -49,7 +50,7 @@ export class MoviesService {
     }
 
     const movie = await this.moviesRepository.getMovie({ where: { title_ua } })
-    if (!movie) return
+    if (!movie) return null
 
     const redisValue = JSON.stringify(movie)
     const weekTtl = 1000 * 60 * 60 * 24 * 7
@@ -61,25 +62,28 @@ export class MoviesService {
     const url: string = `${this.TMDB_API_URL}/search/movie?query=${title_ua}&api_key=${this.TMDB_API_KEY}`
     const { data } = await this.axiosService.get(url)
 
-    const tmdbData: TmdbMovie = data.results.reduce((prev, current) => {
-      return prev.release_date > current.release_date ? prev : current
+    if (!data.results.length) return null
+
+    // Getting the newest movie from the results list
+    const tmdbMovie: TmdbMovie = data.results.reduce((accumulator, current) => {
+      const accumulatorDate = new Date(accumulator.release_date)
+      const currentDate = new Date(current.release_date)
+      return accumulatorDate > currentDate ? accumulator : current
     })
 
-    if (!tmdbData?.id) return
+    if (!tmdbMovie?.id || !tmdbMovie?.overview || !tmdbMovie?.backdrop_path || !tmdbMovie?.poster_path) return null
 
-    const movie = await this.moviesRepository.getMovie({ where: { OR: [{ id: tmdbData.id }, { title: title_ua }] } })
+    const movie = await this.moviesRepository.getMovie({ where: { OR: [{ id: tmdbMovie.id }, { title: title_ua }] } })
     if (movie) return movie
 
-    if (!tmdbData.overview || !tmdbData.backdrop_path || !tmdbData.poster_path) return
-
     const dto: CreateMovieDto = {
-      id: tmdbData.id,
-      title: tmdbData.title,
+      id: tmdbMovie.id,
+      title: tmdbMovie.title,
       title_ua,
-      overview: tmdbData.overview,
-      backdrop_path: tmdbData.backdrop_path,
-      poster_path: tmdbData.poster_path,
-      rating: tmdbData.vote_average
+      overview: tmdbMovie.overview,
+      backdrop_path: tmdbMovie.backdrop_path,
+      poster_path: tmdbMovie.poster_path,
+      rating: tmdbMovie.vote_average
     }
 
     return this.moviesRepository.createMovie({ data: dto })

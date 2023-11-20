@@ -53,6 +53,7 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
       const orderLink = `https://oskar.kyiv.ua${showtimeLink}`
 
       const processedShowtime: CreateShowtimeDto = {
+        cinemaId,
         internal_showtime_id: internalShowtimeId,
         date: combinedDate,
         format: combinedFormats,
@@ -60,7 +61,7 @@ export class OskarShowtimesService implements DataSourceShowtimesService {
         movie
       }
 
-      await this.showtimesService.validateAndCreateShowtime(processedShowtime, cinemaId)
+      await this.showtimesService.validateAndCreateShowtime(processedShowtime)
     }
   }
 

@@ -1,7 +1,9 @@
+import { NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Prisma, Showtime } from '@prisma/client'
 import { Cache } from 'cache-manager'
+import { REDIS_KEY_SHOWTIMES } from '../../common/constants'
 import { CinemasRepository } from '../../cinemas/cinemas.repository'
 import { cinemasStub } from '../../cinemas/test/stubs'
 import { movieStub } from '../../movies/test/stubs'
@@ -59,6 +61,7 @@ describe('ShowtimesService', () => {
   describe('validateAndCreateShowtime', () => {
     describe('when validateAndCreateShowtime is called', () => {
       const dto: CreateShowtimeDto = {
+        cinemaId: 1,
         internal_showtime_id: 20324,
         date: new Date(2023, 10, 15, 10, 45),
         format: '3D',
@@ -66,49 +69,20 @@ describe('ShowtimesService', () => {
         order_link: 'https://cinema.com/showtime/20324',
         movie: movieStub()
       }
-      const cinemaId: number = 10
 
-      const { movie, internal_showtime_id, ...rest } = dto
+      const { movie, cinemaId, ...rest } = dto
       const { id, title } = movie
 
-      beforeEach(async () => {
-        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(null)
-        jest.spyOn(showtimesRepository, 'createShowtime').mockResolvedValue(showtimeStub())
+      test('then it should create a showtime if cinema exists and showtime with the same id doesn\'t', async () => {
         jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemasStub()[0])
+        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(null)
 
-        await service.validateAndCreateShowtime(dto, cinemaId)
-      })
-
-      test('then it should call cinemasRepository.getCinema', () => {
         const cinemaWhereInput: Prisma.CinemaWhereInput = { id: cinemaId }
-
-        expect(cinemasRepository.getCinema).toBeCalledWith({ where: cinemaWhereInput })
-      })
-
-      test('then it should return if cinema is not found', () => {
-        jest.clearAllMocks()
-        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(null)
-
-        expect(showtimesRepository.getShowtime).not.toBeCalled()
-      })
-
-      test('then it should call showtimesRepository.getShowtime', () => {
         const showtimeWhereInput: Prisma.ShowtimeWhereInput = {
-          internal_showtime_id,
+          internal_showtime_id: dto.internal_showtime_id,
           cinema_id: cinemaId
         }
 
-        expect(showtimesRepository.getShowtime).toBeCalledWith({ where: showtimeWhereInput })
-      })
-
-      test('then it should return if showtime already exists', () => {
-        jest.clearAllMocks()
-        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(showtimeStub())
-
-        expect(showtimesRepository.createShowtime).not.toBeCalled()
-      })
-
-      test('then it should call showtimesRepository.createShowtime', () => {
         const showtimeCreateInput: Prisma.ShowtimeCreateInput = {
           cinema: {
             connect: { id: cinemaId }
@@ -116,11 +90,31 @@ describe('ShowtimesService', () => {
           movie: {
             connect: { id_title: { id, title } }
           },
-          internal_showtime_id,
           ...rest
         }
 
+        await service.validateAndCreateShowtime(dto)
+
+        expect(cinemasRepository.getCinema).toBeCalledWith({ where: cinemaWhereInput })
+        expect(showtimesRepository.getShowtime).toBeCalledWith({ where: showtimeWhereInput })
         expect(showtimesRepository.createShowtime).toBeCalledWith({ data: showtimeCreateInput })
+      })
+
+      test('then it should return if cinema doesn\'t exist', async () => {
+        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(null)
+
+        await service.validateAndCreateShowtime(dto)
+
+        expect(showtimesRepository.getShowtime).not.toBeCalled()
+      })
+
+      test('then it should return if showtime with the same id exists', async () => {
+        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemasStub()[0])
+        jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(showtimeStub())
+
+        await service.validateAndCreateShowtime(dto)
+
+        expect(showtimesRepository.createShowtime).not.toBeCalled()
       })
     })
   })
@@ -133,30 +127,23 @@ describe('ShowtimesService', () => {
       }
 
       const { id, format, price, cinema_id, movie_id, movie_title, date } = dto
-      const redisKey: string = `showtimes?id=${id}&format=undefined&price=undefined&cinema_id=undefined&movie_id=${movie_id}&movie_title=undefined&date=undefined`
+      const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=undefined&price=undefined&cinema_id=undefined&movie_id=${movie_id}&movie_title=undefined&date=undefined`
 
       let showtimes: Showtime[]
 
-      beforeEach(async () => {
-        jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue([showtimeStub()])
+      test('then it should call cacheManager.get and return cached showtimes', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(`[${showtimeCachedStub()}]`)
 
         showtimes = await service.getShowtimes(dto)
-      })
 
-      test('then it should call cacheManager.get', () => {
         expect(cacheManager.get).toBeCalledWith(redisKey)
-      })
-
-      test('then it should return showtimes', () => {
         expect(showtimesRepository.getShowtimes).not.toBeCalled()
         expect(showtimes).toEqual([showtimeStub()])
       })
 
-      // BUG: Jest does not detecting showtimesRepository.getShowtimes call, despite there is an actual call
-      test('then it should call showtimesRepository.getShowtimes if no showtime is found in redis', () => {
-        jest.clearAllMocks()
+      test('then it should cache and return showtimes from the showtimesRepository if no showtime is found in cache', async () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue([showtimeStub()])
 
         const showtimeWhereInput: Prisma.ShowtimeWhereInput = {
           id: id ?? undefined,
@@ -167,8 +154,21 @@ describe('ShowtimesService', () => {
           movie_title: movie_title ? { contains: movie_title } : undefined,
           date: date ?? undefined
         }
+        const redisValue = JSON.stringify([showtimeStub()])
 
+        showtimes = await service.getShowtimes(dto)
+
+        expect(cacheManager.get).toBeCalledWith(redisKey)
         expect(showtimesRepository.getShowtimes).toBeCalledWith({ where: showtimeWhereInput })
+        expect(cacheManager.set).toBeCalledWith(redisKey, redisValue)
+        expect(showtimes).toEqual([showtimeStub()])
+      })
+
+      test('then it should throw a NotFoundException if no showtime was returned from the showtimesRepository', async () => {
+        jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
+        jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue([])
+
+        await expect(service.getShowtimes(dto)).rejects.toThrowError(NotFoundException)
       })
     })
   })

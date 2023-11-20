@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Showtime } from '@prisma/client'
 import { Cache } from 'cache-manager'
+import { REDIS_KEY_SHOWTIMES } from '../common/constants'
 import { CinemasRepository } from '../cinemas/cinemas.repository'
 import { ShowtimesRepository } from './showtimes.repository'
 import { CreateShowtimeDto, GetShowtimesDto } from './dtos'
@@ -14,14 +15,14 @@ export class ShowtimesService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache
   ) { }
 
-  async validateAndCreateShowtime(showtime: CreateShowtimeDto, cinemaId: number): Promise<void> {
-    const { movie, internal_showtime_id, ...rest } = showtime
+  async validateAndCreateShowtime(showtime: CreateShowtimeDto): Promise<void> {
+    const { movie, cinemaId, ...rest } = showtime
     const { id, title } = movie
 
     const cinemaExists = await this.cinemasRepository.getCinema({ where: { id: cinemaId } })
     if (!cinemaExists) return
 
-    const showtimeExists = await this.showtimesRepository.getShowtime({ where: { internal_showtime_id, cinema_id: cinemaId } })
+    const showtimeExists = await this.showtimesRepository.getShowtime({ where: { internal_showtime_id: showtime.internal_showtime_id, cinema_id: cinemaId } })
     if (showtimeExists) return
 
     await this.showtimesRepository.createShowtime({
@@ -32,7 +33,6 @@ export class ShowtimesService {
         movie: {
           connect: { id_title: { id, title } }
         },
-        internal_showtime_id,
         ...rest
       }
     })
@@ -40,7 +40,7 @@ export class ShowtimesService {
 
   async getShowtimes(dto: GetShowtimesDto): Promise<Showtime[]> {
     const { id, format, price, cinema_id, movie_id, movie_title, date } = dto
-    const redisKey: string = `showtimes?id=${id}&format=${format}&price=${price}&cinema_id=${cinema_id}&movie_id=${movie_id}&movie_title=${movie_title}&date=${date ? date.toDateString() : undefined}`
+    const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=${format}&price=${price}&cinema_id=${cinema_id}&movie_id=${movie_id}&movie_title=${movie_title}&date=${date ? date.toDateString() : undefined}`
 
     const cachedShowtimes: string = await this.cacheManager.get(redisKey)
 
@@ -54,7 +54,7 @@ export class ShowtimesService {
       return parsedShowtimes
     }
 
-    const showtimes = await this.showtimesRepository.getShowtimes({
+    const showtimes: Showtime[] = await this.showtimesRepository.getShowtimes({
       where: {
         id: id ?? undefined,
         format: format ? { contains: format } : undefined,
