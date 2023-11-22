@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator'
-import { Transform, Type } from 'class-transformer'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { Transform } from 'class-transformer'
 
 export class GetShowtimesDto {
 
@@ -37,10 +37,4 @@ export class GetShowtimesDto {
   @IsString()
   @IsOptional()
   movie_title?: string
-
-  @ApiProperty({ example: '2023-11-10 10:30', description: 'Date and time format: YYYY-MM-DD HH:MM', required: false })
-  @IsDate()
-  @Type(() => Date)
-  @IsOptional()
-  date?: Date
 }

@@ -11,10 +11,11 @@ export class ShowtimesRepository {
     take?: number,
     cursor?: Prisma.ShowtimeWhereUniqueInput,
     where?: Prisma.ShowtimeWhereInput,
-    orderBy?: Prisma.ShowtimeOrderByWithRelationInput
+    orderBy?: Prisma.ShowtimeOrderByWithRelationInput,
+    include?: Prisma.ShowtimeInclude
   }): Promise<Showtime[]> {
-    const { skip, take, cursor, where, orderBy } = params
-    return this.prisma.showtime.findMany({ skip, take, cursor, where, orderBy })
+    const { skip, take, cursor, where, orderBy, include } = params
+    return this.prisma.showtime.findMany({ skip, take, cursor, where, orderBy, include })
   }
 
   async getShowtime(params: {

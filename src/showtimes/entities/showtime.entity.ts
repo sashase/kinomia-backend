@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { Cinema } from '../../cinemas/entities'
 
 export class Showtime {
   @ApiProperty({
@@ -54,4 +55,10 @@ export class Showtime {
     description: 'Title of the movie'
   })
   movie_title: string
+
+  @ApiProperty({
+    type: Cinema,
+    description: 'Information about the cinema associated with the showtime'
+  })
+  cinema: Cinema
 }

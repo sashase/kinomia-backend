@@ -39,8 +39,11 @@ export class ShowtimesService {
   }
 
   async getShowtimes(dto: GetShowtimesDto): Promise<Showtime[]> {
-    const { id, format, price, cinema_id, movie_id, movie_title, date } = dto
-    const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=${format}&price=${price}&cinema_id=${cinema_id}&movie_id=${movie_id}&movie_title=${movie_title}&date=${date ? date.toDateString() : undefined}`
+    const { id, format, price, cinema_id, movie_id, movie_title } = dto
+    const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=${format}&price=${price}&cinema_id=${cinema_id}&movie_id=${movie_id}&movie_title=${movie_title}`
+
+    const todayMidnight: Date = new Date(new Date().setHours(0, 0, 0, 0))
+    const tomorrowMidnightTimestamp: number = new Date().setHours(24, 0, 0, 0)
 
     const cachedShowtimes: string = await this.cacheManager.get(redisKey)
 
@@ -62,12 +65,24 @@ export class ShowtimesService {
         cinema_id: cinema_id ?? undefined,
         movie_id: movie_id ?? undefined,
         movie_title: movie_title ? { contains: movie_title } : undefined,
-        date: date ?? undefined
+        date: {
+          gte: todayMidnight
+        }
+      },
+      include: {
+        cinema: {
+          include: { network: true }
+        },
       }
     })
+
     if (!showtimes.length) throw new NotFoundException()
-    const redisValue = JSON.stringify(showtimes)
-    await this.cacheManager.set(redisKey, redisValue)
+
+    const redisValue: string = JSON.stringify(showtimes)
+    const redisTtl: number = Math.floor((tomorrowMidnightTimestamp - Date.now()) + 1) // Milliseconds till tomorrow midnight
+
+    await this.cacheManager.set(redisKey, redisValue, redisTtl)
+
     return showtimes
   }
 }

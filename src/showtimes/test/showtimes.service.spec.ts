@@ -126,8 +126,8 @@ describe('ShowtimesService', () => {
         movie_id: 901362
       }
 
-      const { id, format, price, cinema_id, movie_id, movie_title, date } = dto
-      const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=undefined&price=undefined&cinema_id=undefined&movie_id=${movie_id}&movie_title=undefined&date=undefined`
+      const { id, format, price, cinema_id, movie_id, movie_title } = dto
+      const redisKey: string = `${REDIS_KEY_SHOWTIMES}?id=${id}&format=undefined&price=undefined&cinema_id=undefined&movie_id=${movie_id}&movie_title=undefined`
 
       let showtimes: Showtime[]
 
@@ -145,6 +145,9 @@ describe('ShowtimesService', () => {
         jest.spyOn(cacheManager, 'get').mockResolvedValue(undefined)
         jest.spyOn(showtimesRepository, 'getShowtimes').mockResolvedValue([showtimeStub()])
 
+        const todayMidnight: Date = new Date(new Date().setHours(0, 0, 0, 0))
+        const tomorrowMidnightTimestamp: number = new Date().setHours(24, 0, 0, 0)
+
         const showtimeWhereInput: Prisma.ShowtimeWhereInput = {
           id: id ?? undefined,
           format: format ? { contains: format } : undefined,
@@ -152,15 +155,25 @@ describe('ShowtimesService', () => {
           cinema_id: cinema_id ?? undefined,
           movie_id: movie_id ?? undefined,
           movie_title: movie_title ? { contains: movie_title } : undefined,
-          date: date ?? undefined
+          date: {
+            gte: todayMidnight
+          }
         }
+
+        const showtimeInclude: Prisma.ShowtimeInclude = {
+          cinema: {
+            include: { network: true }
+          },
+        }
+
         const redisValue = JSON.stringify([showtimeStub()])
+        const redisTtl: number = Math.floor((tomorrowMidnightTimestamp - Date.now()) + 1)
 
         showtimes = await service.getShowtimes(dto)
 
         expect(cacheManager.get).toBeCalledWith(redisKey)
-        expect(showtimesRepository.getShowtimes).toBeCalledWith({ where: showtimeWhereInput })
-        expect(cacheManager.set).toBeCalledWith(redisKey, redisValue)
+        expect(showtimesRepository.getShowtimes).toBeCalledWith({ where: showtimeWhereInput, include: showtimeInclude })
+        expect(cacheManager.set).toBeCalledWith(redisKey, redisValue, redisTtl)
         expect(showtimes).toEqual([showtimeStub()])
       })
 
