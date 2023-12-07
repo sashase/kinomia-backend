@@ -1,0 +1,1 @@
+export const SHOWTIMES_TIMEZONE_ISO_NAME = 'Europe/Kiev'
