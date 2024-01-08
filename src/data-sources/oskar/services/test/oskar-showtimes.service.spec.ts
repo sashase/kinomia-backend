@@ -4,7 +4,7 @@ const combineFormatElementsMock = jest.fn()
 import { Test, TestingModule } from '@nestjs/testing'
 import { Cinema } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
-import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { cinemaStub } from '../../../../cinemas/test/stubs'
 import { ShowtimesService } from '../../../../showtimes/showtimes.service'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { showtimesRootStub } from '../../../../data-sources/test/stubs'
@@ -47,7 +47,7 @@ describe('OskarShowtimesService', () => {
 
   describe('updateShowtimes', () => {
     const url: string = urlStub()
-    const cinema: Cinema = cinemasStub()[0]
+    const cinema: Cinema = cinemaStub()
     const date: string = datesStub()[0]
 
     it('should call all necessary methods to update showtimes', async () => {
@@ -64,7 +64,7 @@ describe('OskarShowtimesService', () => {
   })
 
   describe('processMovie', () => {
-    const cinema: Cinema = cinemasStub()[0]
+    const cinema: Cinema = cinemaStub()
     const movie: HTMLElement = movieElementStub()
     const date = datesStub()[0]
     const combinedDateWithTime = combinedDateWithTimeStub()

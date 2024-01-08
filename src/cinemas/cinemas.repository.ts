@@ -12,9 +12,10 @@ export class CinemasRepository {
     cursor?: Prisma.CinemaWhereUniqueInput,
     where?: Prisma.CinemaWhereInput,
     orderBy?: Prisma.CinemaOrderByWithRelationInput
+    include?: Prisma.CinemaInclude
   }): Promise<Cinema[]> {
-    const { skip, take, cursor, where, orderBy } = params
-    return this.prisma.cinema.findMany({ skip, take, cursor, where, orderBy })
+    const { skip, take, cursor, where, orderBy, include } = params
+    return this.prisma.cinema.findMany({ skip, take, cursor, where, orderBy, include })
   }
 
   async getCinema(params: {

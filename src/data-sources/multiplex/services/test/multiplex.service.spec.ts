@@ -7,7 +7,7 @@ import { NetworksService } from '../../../../networks/networks.service'
 import { MULTIPLEX_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
-import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { cinemaStub } from '../../../../cinemas/test/stubs'
 import { SourceServiceResponse } from '../../../interfaces'
 import { CINEMAS_NOT_FOUND } from '../../../constants'
 import { MultiplexService } from '../../services/multiplex.service'
@@ -57,7 +57,7 @@ describe('MultiplexService', () => {
       beforeEach(async () => {
         jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(networkName).id)
         jest.spyOn(configService, 'get').mockReturnValue(urlStub())
-        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue([cinemaStub()])
 
         response = await service.updateData()
       })
@@ -82,7 +82,7 @@ describe('MultiplexService', () => {
       })
 
       test('then it should call multiplexShowtimesService.updateShowtimes for each cinema', () => {
-        const numberOfCinemas: number = cinemasStub().length
+        const numberOfCinemas: number = [cinemaStub()].length
         expect(multiplexShowtimesService.updateShowtimes).toBeCalledTimes(numberOfCinemas)
       })
 

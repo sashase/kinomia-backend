@@ -5,7 +5,7 @@ const combineDateWithTimeMock = jest.fn()
 import { Test, TestingModule } from '@nestjs/testing'
 import { Cinema } from '@prisma/client'
 import { HTMLElement } from 'node-html-parser'
-import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { cinemaStub } from '../../../../cinemas/test/stubs'
 import { ShowtimesService } from '../../../../showtimes/showtimes.service'
 import { ScraperService } from '../../../../data-sources/scraper.service'
 import { showtimesRootStub } from '../../../../data-sources/test/stubs'
@@ -49,7 +49,7 @@ describe('MultiplexShowtimesService', () => {
 
   describe('updateShowtimes', () => {
     const url: string = urlStub()
-    const cinema: Cinema = cinemasStub()[0]
+    const cinema: Cinema = cinemaStub()
 
     it('should call all necessary methods to update showtimes', async () => {
       service.processMovie = jest.fn()
@@ -65,7 +65,7 @@ describe('MultiplexShowtimesService', () => {
   })
 
   describe('processMovie', () => {
-    const cinema: Cinema = cinemasStub()[0]
+    const cinema: Cinema = cinemaStub()
     const movie: HTMLElement = movieElementStub()
     const filteredShowtimes: HTMLElement[] = filteredShowtimesStub()
     const numberOfDays: number = movie.querySelectorAll('.mpp_schedule').length
@@ -90,7 +90,7 @@ describe('MultiplexShowtimesService', () => {
   })
 
   describe('formatAndCreateShowtime', () => {
-    const cinemaId: number = cinemasStub()[0].id
+    const cinemaId: number = cinemaStub().id
 
     combineDateWithTimeMock.mockReturnValue(new Date(2023, 11, 30, 12, 0, 0))
     getOrderLinkMock.mockReturnValue('https://new.multiplex.ua/order/cinema/0000000017/session/224146')

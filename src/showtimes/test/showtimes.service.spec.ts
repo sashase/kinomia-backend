@@ -5,7 +5,7 @@ import { Prisma, Showtime } from '@prisma/client'
 import { Cache } from 'cache-manager'
 import { REDIS_KEY_SHOWTIMES } from '../../common/constants'
 import { CinemasRepository } from '../../cinemas/cinemas.repository'
-import { cinemasStub } from '../../cinemas/test/stubs'
+import { cinemaStub } from '../../cinemas/test/stubs'
 import { movieStub } from '../../movies/test/stubs'
 import { ShowtimesService } from '../showtimes.service'
 import { ShowtimesRepository } from '../showtimes.repository'
@@ -74,7 +74,7 @@ describe('ShowtimesService', () => {
       const { id, title } = movie
 
       test('then it should create a showtime if cinema exists and showtime with the same id doesn\'t', async () => {
-        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemasStub()[0])
+        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemaStub())
         jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(null)
 
         const cinemaWhereInput: Prisma.CinemaWhereInput = { id: cinemaId }
@@ -109,7 +109,7 @@ describe('ShowtimesService', () => {
       })
 
       test('then it should return if showtime with the same id exists', async () => {
-        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemasStub()[0])
+        jest.spyOn(cinemasRepository, 'getCinema').mockResolvedValue(cinemaStub())
         jest.spyOn(showtimesRepository, 'getShowtime').mockResolvedValue(showtimeStub())
 
         await service.validateAndCreateShowtime(dto)
