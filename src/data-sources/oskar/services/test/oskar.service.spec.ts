@@ -8,7 +8,7 @@ import { NetworksService } from '../../../../networks/networks.service'
 import { OSKAR_NETWORK_NAME } from '../../../../networks/constants'
 import { networkStub } from '../../../../networks/test/stubs'
 import { CinemasRepository } from '../../../../cinemas/cinemas.repository'
-import { cinemasStub } from '../../../../cinemas/test/stubs'
+import { cinemaStub } from '../../../../cinemas/test/stubs'
 import { sourceServiceResponseStub } from '../../../test/stubs'
 import { SourceServiceResponse } from '../../../interfaces'
 import { CINEMAS_NOT_FOUND, DATES_ARRAY_CANNOT_BE_GENERATED } from '../../../constants'
@@ -63,7 +63,7 @@ describe('OskarService', () => {
       beforeEach(async () => {
         jest.spyOn(networksService, 'getNetworkIdByName').mockResolvedValue(networkStub(networkName).id)
         jest.spyOn(configService, 'get').mockReturnValue(urlStub())
-        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue(cinemasStub())
+        jest.spyOn(cinemasRepository, 'getCinemas').mockResolvedValue([cinemaStub()])
         getDatesMock.mockReturnValue(datesStub())
 
         response = await service.updateData()
@@ -98,7 +98,7 @@ describe('OskarService', () => {
       })
 
       test('then it should call oskarShowtimesService.updateShowtimes for each cinema and date', () => {
-        const numberOfCinemas: number = cinemasStub().length
+        const numberOfCinemas: number = [cinemaStub()].length
         const numberOfDates: number = datesStub().length
         const totalNumberOfCalls: number = numberOfCinemas * numberOfDates
         expect(oskarShowtimesService.updateShowtimes).toBeCalledTimes(totalNumberOfCalls)

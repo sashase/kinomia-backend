@@ -1,4 +1,4 @@
-import { BadGatewayException, NotFoundException } from '@nestjs/common'
+import { BadGatewayException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { Network } from '@prisma/client'
 import { MULTIPLEX_NETWORK_NAME } from '../../../../networks/constants'
